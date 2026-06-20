@@ -1,0 +1,321 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@model IEnumerable<AgingTest.Models.DataLampu>
+
+@{
+    Layout = "~/Views/Shared/_MainLayout.cshtml";
+    ViewData["Title"] = "Data Lampu";
+}
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-semibold mb-1">Lampu Aging Management</h3>
+            <small class="text-muted">Manage aging lamp data and monitoring status</small>
+        </div>
+        <button class="btn btn-primary rounded-3 px-4 shadow-sm" data-bs-toggle="modal" data-bs-target="#createModal">
+            <i class="fa-solid fa-plus me-2"></i>Tambah Lampu
+        </button>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-3">
+            @TempData["Success"]
+            <button class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm rounded-3">
+            @TempData["Error"]
+            <button class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="card border-2 shadow-sm rounded-0 overflow-hidden">
+        <div class="card-body">
+            <div class="table-responsive">
+
+                @if (Model != null && Model.Any())
+                {
+                    <table id="lampTable"
+                           class="table align-middle table-hover w-100">
+
+                        <thead class="table-light">
+                            <tr>
+                                <th>No</th>
+                                <th>Lampu</th>
+                                <th>Status</th>
+                                <th>Remarks</th>
+                                <th>Created</th>
+                                <th width="120">Action</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            @{
+                                int no = 1;
+                            }
+
+                            @foreach (var item in Model)
+                            {
+                                <tr>
+
+                                    <td>@no</td>
+
+                                    <td>
+                                        <div class="fw-semibold">
+                                            @item.lamp_name
+                                        </div>
+
+                                        <small class="text-muted">
+                                            @item.lamp_code
+                                        </small>
+                                    </td>
+
+                                    <td>
+
+                                        @if (item.lamp_status)
+                                        {
+                                            <span class="badge bg-success">
+                                                Active
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger">
+                                                Inactive
+                                            </span>
+                                        }
+
+                                </td>
+
+                                <td>
+                                    @(string.IsNullOrWhiteSpace(item.remarks)
+                                                                    ? "-"
+                                                                    : item.remarks)
+                            </td>
+
+                                    <td>
+                                        @item.created_at.ToString("dd MMM yyyy HH:mm")
+                                    </td>
+
+                                    <td>
+
+                                        <div class="d-flex gap-2">
+
+                                            <button type="button"
+                                                    class="btn btn-warning btn-sm"
+                                                    onclick="editLampu(
+                                                            '@item.id_lamp',
+                                                            '@item.lamp_name',
+                                                            '@item.lamp_code',
+                                                            '@item.lamp_status',
+                                                            '@(item.remarks ?? "")')">
+
+                                                <i class="fa-solid fa-pen"></i>
+
+                                            </button>
+
+                                            <a asp-action="DeleteLampuAging"
+                                               asp-route-id="@item.id_lamp"
+                                               class="btn btn-danger btn-sm"
+                                               onclick="return confirm('Delete this lamp data?')">
+
+                                                <i class="fa-solid fa-trash"></i>
+
+                                            </a>
+
+                                        </div>
+
+                                    </td>
+
+                                </tr>
+
+                                                no++;
+                            }
+
+                        </tbody>
+
+                    </table>
+                }
+                else
+                {
+                    <div class="alert alert-info">
+                        No lamp data available
+                    </div>
+                }
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CREATE -->
+<div class="modal fade" id="createModal">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-2 rounded-0">
+
+            <form asp-action="CreateLampuAging" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-semibold">Tambah data lampu</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Nama Lampu</label>
+                            <input name="lamp_name" class="form-control rounded-3" required />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Kode Lampu</label>
+                            <input name="lamp_code" class="form-control rounded-3" required />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Status</label>
+
+                            <select name="lamp_status" class="form-select rounded-3">
+                                <option value="true">Active</option>
+                                <option value="false">Inactive</option>
+                            </select>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label">Remarks</label>
+                            <textarea name="remarks" rows="3" class="form-control rounded-3"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light rounded-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary rounded-3 px-4">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- EDIT -->
+<div class="modal fade" id="editModal">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-2 rounded-0">
+
+            <form asp-action="EditLampuAging" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="edit_id" name="id_lamp" />
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-semibold">Edit Data Lampu</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Nama Lampu</label>
+                            <input id="edit_nama" name="lamp_name" class="form-control rounded-3" required />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Kode Lampu</label>
+                            <input id="edit_kode" name="lamp_code" class="form-control rounded-3" required />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Status</label>
+
+                            <select id="edit_status" name="lamp_status" class="form-select rounded-3">
+                                <option value="true">Active</option>
+                                <option value="false">Inactive</option>
+                            </select>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label">Remarks</label>
+                            <textarea id="edit_remarks" name="remarks" rows="3" class="form-control rounded-3"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light rounded-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning rounded-3 px-4">Update</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+
+<script>
+
+    $(document).ready(function () {
+
+        if ($('#lampTable').length) {
+
+            $('#lampTable').DataTable({
+
+                responsive: true,
+                autoWidth: false,
+
+                pageLength: 10,
+
+                lengthMenu: [
+                    [10, 25, 50, 100],
+                    [10, 25, 50, 100]
+                ],
+
+                language: {
+
+                    search: "",
+
+                    searchPlaceholder: "Search lamp...",
+
+                    lengthMenu: "Show _MENU_ entries",
+
+                    info: "Showing _START_ to _END_ of _TOTAL_ lamps",
+
+                    emptyTable: "No lamp data available",
+
+                    zeroRecords: "No matching lamp found",
+
+                    paginate: {
+                        previous: "<",
+                        next: ">"
+                    }
+                }
+            });
+        }
+    });
+
+    function editLampu(id, nama, kode, status, remarks) {
+
+        $('#edit_id').val(id);
+        $('#edit_nama').val(nama);
+        $('#edit_kode').val(kode);
+
+        $('#edit_status').val(
+            status.toString().toLowerCase()
+        );
+
+        $('#edit_remarks').val(remarks);
+
+        const modal =
+            new bootstrap.Modal(
+                document.getElementById('editModal')
+            );
+
+        modal.show();
+    }
+
+</script>
+
+}

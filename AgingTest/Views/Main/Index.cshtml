@@ -1,0 +1,107 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+    Layout = "~/Views/Shared/_MainLayout.cshtml";
+    ViewData["Title"] = "Dashboard";
+}
+
+@section Styles {
+    <style>
+        .welcome-container {
+            min-height: calc(100vh - 100px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            /* background: radial-gradient(circle at 30% 30%, #0f5132, #052c1f 40%, #02140f 100%); */
+            color: black;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .welcome-box {
+            text-align: center;
+            z-index: 2;
+        }
+
+        .welcome-title {
+            font-size: 3rem;
+            font-weight: 700;
+        }
+
+        .welcome-subtitle {
+            font-size: 1.2rem;
+            opacity: 0.85;
+        }
+
+        .welcome-card {
+            border-radius: 20px;
+            transition: 0.3s ease-in-out;
+        }
+
+            .welcome-card:hover {
+                transform: translateY(-6px);
+                box-shadow: 0 12px 30px rgba(0,0,0,0.2);
+            }
+
+        .bg-overlay-logo {
+            position: absolute;
+            max-width: 700px;
+            width: 60%;
+            opacity: 0.05;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1;
+        }
+    </style>
+}
+
+<div class="welcome-container">
+
+    <img src="@Url.Content("~/images/EXL-Logo_Flash-Black-RGB.png")"
+         class="bg-overlay-logo"
+         alt="Background Logo" />
+
+    <div class="welcome-box container">
+
+        <h1 class="welcome-title mb-3">
+            Welcome to Aging X
+        </h1>
+
+        <p class="welcome-subtitle mb-5">
+            Real-Time Monitoring Lampu Aging Test berbasis ESP32 & Web Dashboard<br />
+        </p>
+
+        <div class="row justify-content-center g-4">
+
+            <div class="col-md-4">
+                <div class="card welcome-card p-4 text-center shadow-sm rounded-0">
+                    <h5 class="fw-bold">Real-Time Monitoring</h5>
+                    <p class="text-muted mb-0">
+                        Memantau kondisi pengujian lampu secara real-time untuk memastikan proses aging test berjalan dengan optimal.
+                    </p>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card welcome-card p-4 text-center shadow-sm rounded-0">
+                    <h5 class="fw-bold">Interactive Dashboard</h5>
+                    <p class="text-muted mb-0">
+                        Visualisasi data yang intuitif dan interaktif untuk mendukung analisis performa dan pengambilan keputusan.
+                    </p>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card welcome-card p-4 text-center shadow-sm rounded-0">
+                    <h5 class="fw-bold">Device Integration</h5>
+                    <p class="text-muted mb-0">
+                        Terhubung dengan mikrokontroler dan sistem monitoring untuk menyediakan akuisisi data yang andal dan terpusat.
+                    </p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>

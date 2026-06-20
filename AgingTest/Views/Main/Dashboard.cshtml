@@ -1,0 +1,329 @@
+﻿@using AgingTest.Models.ViewModels
+@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@model List<DashboardViewModel>
+
+@{
+    Layout = "~/Views/Shared/_MainLayout.cshtml";
+    ViewData["Title"] = "Dashboard";
+
+    var total = Model.Count;
+    var online = Model.Count(x => x.OperationalStatus == "READY");
+    var running = Model.Count(x => x.OperationalStatus == "RUNNING");
+    var down = Model.Count(x => x.OperationalStatus == "DOWNTIME");
+}
+
+<style>
+    .status-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 10px;
+    }
+
+    .status-online {
+        background: #22c55e;
+    }
+
+    .status-offline {
+        background: #9ca3af;
+    }
+
+    .status-downtime {
+        background: #ef4444;
+    }
+</style>
+<div class="container">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-semibold mb-1">Aging Test Dashboard</h3>
+            <small class="text-muted">Realtime monitoring device aging process</small>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3">
+                <small class="text-muted">Total Device</small>
+                <h2 class="fw-bold mb-0">@total</h2>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-success text-white">
+                <small>Ready Device</small>
+                <h2 class="fw-bold mb-0">@online</h2>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-primary">
+                <small>Running Device</small>
+                <h2 class="fw-bold mb-0">@running</h2>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-danger text-white">
+                <small>Downtime Device</small>
+                <h2 class="fw-bold mb-0">@down</h2>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body">
+
+            <div class="table-responsive">
+
+                <table id="dashboardTable" class="table align-middle table-hover">
+
+                    <thead class="table-light">
+                        <tr>
+                            <th>Device</th>
+                            <th>IoT Module</th>
+                            <th>Operational Status</th>
+                            <th width="350">Aging Progress</th>
+                            <th>Last Finished</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+
+                                <td>
+                                    <div class="fw-semibold">@item.nama_device</div>
+                                    <small class="text-muted">@item.kode_device</small>
+                                </td>
+
+                                <td>
+
+                                    <div class="d-flex align-items-center">
+
+                                        @if (item.ModuleStatus == "ONLINE")
+                                        {
+                                            <span class="status-dot status-online"></span>
+                                        }
+                                        else if (item.ModuleStatus == "OFFLINE")
+                                        {
+                                            <span class="status-dot status-offline"></span>
+                                        }
+                                        else
+                                        {
+                                            <span class="status-dot status-downtime"></span>
+                                        }
+
+                                        <div>
+
+                                            <div class="fw-semibold">
+                                                @item.ModuleName
+                                            </div>
+
+                                            <small class="text-muted">
+                                                Last beat :
+                                                @(item.LastHeartbeat?.ToString("dd:MM:yy/HH:mm:ss") ?? "-")
+                                            </small>
+
+                                        </div>
+
+                                    </div>
+
+                                </td>
+                                <td>
+
+                                    @switch (item.OperationalStatus)
+                                    {
+                                        case "RUNNING":
+
+                                            <span class="badge bg-primary rounded-pill">
+                                                RUNNING
+                                            </span>
+
+                                            break;
+
+                                        case "DOWNTIME":
+
+                                            <span class="badge bg-danger rounded-pill">
+                                                DOWNTIME
+                                            </span>
+
+                                            break;
+
+                                        case "OFFLINE":
+
+                                            <span class="badge bg-secondary rounded-pill">
+                                                OFFLINE
+                                            </span>
+
+                                            break;
+
+                                        case "READY":
+
+                                            <span class="badge bg-success rounded-pill">
+                                                READY
+                                            </span>
+
+                                            break;
+
+                                        case "FINISHED":
+
+                                            <span class="badge bg-info rounded-pill">
+                                                FINISHED
+                                            </span>
+
+                                            break;
+
+                                        default:
+
+                                            <span class="badge bg-dark rounded-pill">
+                                                DISABLED
+                                            </span>
+
+                                            break;
+                                    }
+
+                                </td>
+                              
+                                <td>
+
+                                    @if (item.IsRunning)
+                                    {
+                                        <div>
+
+                                            <div class="d-flex justify-content-between mb-1">
+
+                                                <small>
+                                                    @(item.StartTime?.ToString("dd MMM HH:mm"))
+                                                </small>
+
+                                                <small>
+                                                    @(item.EndTime?.ToString("dd MMM HH:mm"))
+                                                </small>
+
+                                            </div>
+
+                                            <div class="progress"
+                                                 style="height:8px;">
+
+                                                <div class="progress-bar bg-primary"
+                                                     style="width:@(item.ProgressPercent)%">
+                                                </div>
+
+                                            </div>
+
+                                            <small class="text-muted">
+                                                @item.ProgressPercent %
+                                            </small>
+
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">
+                                            -
+                                        </span>
+                                    }
+
+                                </td>
+                                <td>
+
+                                    @if (item.LastFinishedTime != null)
+                                    {
+                                        <div>
+                                            @item.LastFinishedTime?.ToString("dd MMM yyyy")
+                                        </div>
+
+                                        <small class="text-muted">
+                                            @item.LastFinishedTime?.ToString("HH:mm")
+                                        </small>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">
+                                            Never Run
+                                        </span>
+                                    }
+
+                                </td>
+                                <td>
+
+                                    @switch (item.ActionType)
+                                    {
+                                        case "SETUP_MODULE":
+
+                                            <a asp-action="IoTDeviceData"
+                                               class="btn btn-dark btn-sm">
+                                                Setup Module
+                                            </a>
+
+                                            break;
+
+                                        case "CHECK_MODULE":
+
+                                            <a asp-action="IoTDeviceData"
+                                               class="btn btn-warning btn-sm">
+                                                Check Module
+                                            </a>
+
+                                            break;
+
+                                        case "CHECK_DEVICE":
+
+                                            <button class="btn btn-secondary btn-sm">
+                                                Check Device
+                                            </button>
+
+                                            break;
+
+                                        case "MONITOR":
+
+                                            <a asp-action="MonitoringAging"
+                                               asp-route-deviceId="@item.id_device"
+                                               class="btn btn-primary btn-sm">
+                                                Monitor
+                                            </a>
+
+                                            break;
+
+                                        default:
+
+                                            <a asp-action="SetUpAging"
+                                               asp-route-deviceId="@item.id_device"
+                                               class="btn btn-success btn-sm">
+                                                Start Aging
+                                            </a>
+
+                                            break;
+                                    }
+
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $('#dashboardTable').DataTable({
+            responsive:true,
+            pageLength:10,
+            language:{
+                search:"",
+                searchPlaceholder:"Search device..."
+            }
+        });
+    </script>
+}

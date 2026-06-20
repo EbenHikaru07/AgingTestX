@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36414.22
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AgingTest", "AgingTest\AgingTest.csproj", "{74BF3DF5-F6CC-4831-9B16-F34A0A9E350C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AgingTest_API", "AgingTest_API\AgingTest_API.csproj", "{021E6918-C324-4436-BCB7-AEF1C440311C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{74BF3DF5-F6CC-4831-9B16-F34A0A9E350C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{74BF3DF5-F6CC-4831-9B16-F34A0A9E350C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{74BF3DF5-F6CC-4831-9B16-F34A0A9E350C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{74BF3DF5-F6CC-4831-9B16-F34A0A9E350C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{021E6918-C324-4436-BCB7-AEF1C440311C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{021E6918-C324-4436-BCB7-AEF1C440311C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{021E6918-C324-4436-BCB7-AEF1C440311C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{021E6918-C324-4436-BCB7-AEF1C440311C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {CB6F524B-9623-42A0-899C-36F6F96B2B08}
+	EndGlobalSection
+EndGlobal

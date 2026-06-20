@@ -1,0 +1,553 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@model AgingTest.Models.ViewModels.HistoryPengujianVM
+
+@{
+    ViewData["Title"] = "History Aging Test";
+    Layout = "~/Views/Shared/_MainLayout.cshtml";
+}
+
+<link rel="stylesheet"
+      href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
+
+<style>
+    .lamp-info-card {
+        background: linear-gradient(135deg,#0d6efd,#4c8dff);
+        color: white;
+        border-radius: 12px;
+        padding: 18px;
+    }
+
+        .lamp-info-card small {
+            opacity: .85;
+        }
+
+        .lamp-info-card h6 {
+            margin-top: 4px;
+            font-weight: 600;
+        }
+    .card {
+        border-radius: 12px;
+    }
+
+    .stat-card {
+        border: none;
+        border-radius: 12px;
+        transition: .3s;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-3px);
+    }
+
+    .chart-container {
+        height: 400px;
+    }
+
+    .table th {
+        white-space: nowrap;
+    }
+
+    .badge-running {
+        background-color: #198754;
+    }
+
+    .badge-finished {
+        background-color: #6c757d;
+    }
+
+</style>
+
+<div class="container-fluid">
+
+    <div class="card shadow mb-4">
+
+        <div class="card-header bg-primary text-white">
+
+            <h5 class="mb-0">
+                History Aging Test
+            </h5>
+
+        </div>
+
+        <div class="card-body">
+
+            <form method="get"
+                  asp-controller="Main"
+                  asp-action="HistoriPengujian">
+
+                <div class="row">
+
+                    <div class="col-md-5">
+
+                        <label class="form-label">
+                            Pilih Lampu
+                        </label>
+
+                        <select class="form-select"
+                                name="lampId"
+                                onchange="this.form.submit()">
+
+                            <option value="">
+                                -- Pilih Lampu --
+                            </option>
+
+                            @foreach (var lamp in Model.Lamps)
+                            {
+                                if (Model.SelectedLampId == lamp.IdLamp)
+                                {
+                                    <option selected value="@lamp.IdLamp">
+                                        @lamp.LampName
+                                    </option>
+                                }
+                                else
+                                {
+                                    <option value="@lamp.IdLamp">
+                                        @lamp.LampName
+                                    </option>
+                                }
+                            }
+
+                        </select>
+
+                    </div>
+                    <div class="col-md-7">
+
+                        @if (Model.SelectedLampId != null)
+                        {
+                            <div class="lamp-info-card shadow">
+
+                                <div class="row">
+
+                                    <div class="col-md-4">
+                                        <small>Nama Lampu</small>
+                                        <h6>@Model.SelectedLampName</h6>
+                                    </div>
+
+                                    <div class="col-md-4">
+                                        <small>Kode Lampu</small>
+                                        <h6>@Model.SelectedLampCode</h6>
+                                    </div>
+
+                                    <div class="col-md-4">
+                                        <small>Total Pengujian</small>
+                                        <h6>@Model.TotalProcess</h6>
+                                    </div>
+
+                                </div>
+
+                            </div>
+                        }
+
+                    </div>
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+    @if (Model.Processes != null && Model.Processes.Any())
+    {
+        <div class="card shadow mb-4">
+            <div class="card-header bg-secondary text-white">
+                <h6 class="mb-0">
+                    Daftar Pengujian
+                </h6>
+            </div>
+            <div class="card-body">
+                <table id="tblProcess"
+                       class="table table-bordered table-striped">
+                    <thead>
+                        <tr>
+                            <th>Process ID</th>
+                            <th>Device</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>No Uji</th>
+                            <th>Status</th>
+                            <th width="120">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.Processes)
+                        {
+                            <tr>
+                                <td>
+                                    @item.IdProcess
+                                </td>
+                                <td>
+                                    @item.DeviceName
+                                </td>
+                                <td>
+                                    @(item.StartTime?.ToString("dd MMM yyyy HH:mm:ss"))
+                                </td>
+                                <td>
+                                    @(item.EndTime?.ToString("dd MMM yyyy HH:mm:ss"))
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary">
+                                        Pengujian Ke-@item.TestNumber
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge @(item.Status == 1 ? "bg-success" : "bg-secondary")">
+                                        @item.StatusText
+                                    </span>
+                                </td>
+                                <td>
+
+                                    <a asp-controller="Main"
+                                       asp-action="HistoriPengujian"
+                                       asp-route-lampId="@Model.SelectedLampId"
+                                       asp-route-processId="@item.IdProcess"
+                                       class="btn btn-primary btn-sm">
+                                        Detail
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+    @if (Model.Logs != null && Model.Logs.Any())
+    {
+        var totalLog = Model.Logs.Count;
+        var avgCurrent = Model.Logs.Average(x => x.Current);
+        var avgVoltage = Model.Logs.Average(x => x.Voltage);
+        var abnormalCount = Model.Logs.Count(x => x.IsAbnormal);
+
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card stat-card shadow">
+                    <div class="card-body text-center">
+                        <h6>Total Log</h6>
+                        <h2>@totalLog</h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card stat-card shadow">
+                    <div class="card-body text-center">
+                        <h6>Average Current</h6>
+                        <h2>@avgCurrent.ToString("N2") A</h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card stat-card shadow">
+                    <div class="card-body text-center">
+                        <h6>Average Voltage</h6>
+                        <h2>@avgVoltage.ToString("N2") V</h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card stat-card shadow">
+                    <div class="card-body text-center">
+                        <h6>Abnormal Event</h6>
+                        <h2>@abnormalCount</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12 mb-2">
+                <div class="card shadow mb-4">
+
+                    <div class="card-header bg-info text-white">
+                        Current Trend
+                    </div>
+
+                    <div class="card-body">
+
+                        <div id="currentChart"
+                             style="height:500px;">
+                        </div>
+
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="col-lg-12 mb-2">
+                <div class="card shadow mb-4">
+
+                    <div class="card-header bg-warning">
+                        Voltage Trend
+                    </div>
+
+                    <div class="card-body">
+
+                        <div id="voltageChart"
+                             style="height:500px;">
+                        </div>
+
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow">
+
+            <div class="card-header bg-dark text-white">
+
+                Measurement Logs
+
+            </div>
+
+            <div class="card-body">
+
+                <table id="tblLog"
+                       class="table table-bordered table-striped">
+
+                    <thead>
+
+                        <tr>
+                            <th>Time</th>
+                            <th>Current (A)</th>
+                            <th>Voltage (V)</th>
+                            <th>Status</th>
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        @foreach (var log in Model.Logs)
+                        {
+                            <tr>
+
+                                <td>
+                                    @log.LogTime.ToString("dd MMM yyyy HH:mm:ss")
+                                </td>
+
+                                <td>
+                                    @log.Current
+                                </td>
+
+                                <td>
+                                    @log.Voltage
+                                </td>
+
+                                <td>
+
+                                    @if (log.IsAbnormal)
+                                    {
+                                        <span class="badge bg-danger">
+                                            Abnormal
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success">
+                                            Normal
+                                        </span>
+                                    }
+
+                                </td>
+
+                            </tr>
+                        }
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+    }
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+@if (Model.Logs != null && Model.Logs.Any())
+{
+    <script>
+
+        const labels = [
+            @Html.Raw(string.Join(",",
+                Model.Logs.Select(x =>
+                $"'{x.LogTime:dd/MM HH:mm:ss}'")))
+    ];
+
+    const currents = [
+        @Html.Raw(string.Join(",",
+                        Model.Logs.Select(x =>
+                        x.Current.ToString(System.Globalization.CultureInfo.InvariantCulture))))
+    ];
+
+    const voltages = [
+        @Html.Raw(string.Join(",",
+                        Model.Logs.Select(x =>
+                        x.Voltage.ToString(System.Globalization.CultureInfo.InvariantCulture))))
+    ];
+
+    const abnormalColors = [
+        @Html.Raw(string.Join(",",
+                        Model.Logs.Select(x =>
+                        x.IsAbnormal ? "'#dc3545'" : "'#0d6efd'")))
+    ];
+
+    // ===========================
+    // CURRENT CHART
+    // ===========================
+
+    const currentChart =
+        echarts.init(
+            document.getElementById('currentChart'));
+
+    currentChart.setOption({
+
+        animation: false,
+
+        tooltip: {
+            trigger: 'axis'
+        },
+
+        toolbox: {
+            show: true,
+            feature: {
+                saveAsImage: {
+                    title: 'Download PNG'
+                },
+                restore: {},
+                dataZoom: {}
+            }
+        },
+
+        dataZoom: [
+            {
+                type: 'inside'
+            },
+            {
+                type: 'slider',
+                height: 20
+            }
+        ],
+
+        xAxis: {
+            type: 'category',
+            boundaryGap: false,
+            data: labels
+        },
+
+        yAxis: {
+            type: 'value',
+            name: 'Ampere'
+        },
+
+        series: [
+            {
+                name: 'Current',
+                type: 'line',
+                smooth: true,
+                showSymbol: false,
+                sampling: 'lttb',
+                areaStyle: {},
+                data: currents
+            }
+        ]
+    });
+
+    // ===========================
+    // VOLTAGE CHART
+    // ===========================
+
+    const voltageChart =
+        echarts.init(
+            document.getElementById('voltageChart'));
+
+    voltageChart.setOption({
+
+        animation: false,
+
+        tooltip: {
+            trigger: 'axis'
+        },
+
+        toolbox: {
+            show: true,
+            feature: {
+                saveAsImage: {
+                    title: 'Download PNG'
+                },
+                restore: {},
+                dataZoom: {}
+            }
+        },
+
+        dataZoom: [
+            {
+                type: 'inside'
+            },
+            {
+                type: 'slider',
+                height: 20
+            }
+        ],
+
+        xAxis: {
+            type: 'category',
+            boundaryGap: false,
+            data: labels
+        },
+
+        yAxis: {
+            type: 'value',
+            name: 'Volt'
+        },
+
+        series: [
+            {
+                name: 'Voltage',
+                type: 'line',
+                smooth: true,
+                showSymbol: false,
+                sampling: 'lttb',
+                areaStyle: {},
+                data: voltages
+            }
+        ]
+    });
+
+    window.addEventListener('resize', function () {
+
+        currentChart.resize();
+        voltageChart.resize();
+
+    });
+
+</script>
+}
+
+<script>
+
+    $(document).ready(function () {
+
+        $('#tblProcess').DataTable({
+            pageLength: 10
+        });
+
+        $('#tblLog').DataTable({
+            pageLength: 25
+        });
+
+    });
+
+</script>

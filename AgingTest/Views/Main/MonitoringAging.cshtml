@@ -1,0 +1,754 @@
+﻿@using AgingTest.Models.ViewModels
+@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@model MonitoringViewModel
+
+@{
+    Layout = "~/Views/Shared/_MainLayout.cshtml";
+    ViewData["Title"] = "Monitoring Aging";
+}
+
+<script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+
+<style>
+    .module-card {
+        background: linear-gradient( 135deg, #ffffff, #f8fafc );
+        border-radius: 20px;
+    }
+
+    .module-status {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 10px;
+    }
+
+    .status-dot {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    .status-online {
+        background: #22c55e;
+        box-shadow: 0 0 8px #22c55e, 0 0 15px #22c55e;
+    }
+
+    .status-offline {
+        background: #94a3b8;
+    }
+
+    .module-name {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #334155;
+    }
+
+    .heartbeat {
+        display: block;
+        margin-top: 10px;
+        color: #64748b;
+        font-size: .8rem;
+    }
+
+    .card {
+        border: none;
+        border-radius: 0px;
+        background: #fff;
+        box-shadow: 0 4px 12px rgba(0,0,0,.04);
+        transition: .25s;
+    }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0,0,0,.08);
+        }
+
+    #chartCurrent,
+    #chartVoltage {
+        border-radius: 10px;
+    }
+
+    .progress {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .progress-bar {
+        transition: width 0.5s ease-in-out;
+    }
+
+    .status-box {
+        font-size: 1.2rem;
+        font-weight: bold;
+        padding: 10px;
+        border-radius: 10px;
+        text-align: center;
+    }
+
+    .timer-box {
+        font-size: 1.4rem;
+        font-weight: bold;
+        text-align: center;
+    }
+
+    .card h5, .card h6 {
+        font-weight: 600;
+    }
+
+    #currentText, #voltageText {
+        letter-spacing: 1px;
+    }
+</style>
+
+<div class="container-fluid">
+
+    <h3 class="fw-bold mb-4">📊 Monitoring Aging</h3>
+
+    <!-- 🔥 TOP -->
+    <div class="row g-4">
+
+        <div class="col-lg-3">
+            <div class="card p-3 shadow-sm">
+                <small>Device</small>
+                <strong>@Model.DeviceName</strong><br />
+                <small>@Model.DeviceCode</small>
+            </div>
+        </div>
+        <div class="col-lg-3">
+            <div class="card p-3 shadow-sm">
+                <small>Lampu</small>
+                <strong>@Model.LampuName</strong><br />
+                <small>@Model.LampuCode</small>
+            </div>
+        </div>
+
+        <div class="col-lg-3">
+            <div class="card p-4 shadow-sm module-card">
+                <div class="text-center">
+
+                    <small class="text-uppercase text-muted">
+                        IoT Module
+                    </small>
+
+                    <div class="module-status">
+
+                        <span id="statusDot"
+                              class="status-dot status-online">
+                        </span>
+
+                        <span id="moduleName"
+                              class="module-name">
+                            @Model.ModuleName
+                        </span>
+
+                    </div>
+
+                    <small id="heartbeatText"
+                           class="heartbeat">
+
+                        Last heartbeat:
+                        @Model.LastHeartbeat?.ToString("dd MMM yyyy HH:mm:ss")
+
+                    </small>
+
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3">
+            <div class="card p-3 text-center shadow-sm">
+                <small>Status Pengujian</small>
+                <div id="statusBox" class="status-box mt-2">@Model.StatusText</div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 🔥 PROGRESS -->
+    <div class="row mt-2 g-4">
+
+        <!-- 🔥 PROGRESS (LEBAR) -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+
+                    <div class="d-flex justify-content-between mb-2">
+                        <h5>Progress Aging Test</h5>
+                        <h5 id="progressText">0%</h5>
+                    </div>
+
+                    <div class="progress"
+                         style="height:25px">
+
+                        <div id="progressBar"
+                             class="progress-bar bg-success">
+                        </div>
+
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- 🔥 CURRENT -->
+        <div class="col-lg-3">
+            <div class="card p-4 shadow-sm text-center h-100">
+                <h6 class="text-muted">⚡ Current</h6>
+
+                <!-- TEXT BESAR -->
+                <div id="currentText" class="fw-bold" style="font-size: 2rem;">
+                    @(Model.CurrentValue ?? 0) A
+                </div>
+
+                <div class="progress mt-3">
+                    <div id="currentBar" class="progress-bar"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 🔥 VOLTAGE -->
+        <div class="col-lg-3">
+            <div class="card p-3 text-center shadow-sm">
+                <small>Timer</small>
+                <div id="timerBox" class="timer-box mt-2">-</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🔥 CHART -->
+    <div class="row mt-4">
+        <div class="col-lg-12">
+            <div class="card p-4 shadow-sm">
+
+                <!-- 🔥 HEADER + TOOLS -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5>📈 Current Chart</h5>
+                </div>
+                <div id="chartCurrent" style="width:100%; height:420px;"></div>
+            </div>
+        </div>
+
+        <div class="col-lg-12 mt-4">
+            <div class="card p-4 shadow-sm">
+
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5>📈 Voltage Chart</h5>
+
+                </div>
+
+                <div id="chartVoltage" style="width:100%; height:420px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // CONFIG
+    const UPDATE_INTERVAL = 5000;
+    const TIMER_INTERVAL = 1000;
+    const MAX_CHART_DATA = 200;
+
+    // TIME
+    let startTimeRaw = "@Model.StartTime?.ToString("yyyy-MM-ddTHH:mm:ss")";
+    let endTimeRaw = "@Model.EndTime?.ToString("yyyy-MM-ddTHH:mm:ss")";
+
+    let startTime = startTimeRaw ? new Date(startTimeRaw) : null;
+    let endTime = endTimeRaw ? new Date(endTimeRaw) : null;
+
+    // CHART INIT
+    const chartCurrent = echarts.init(
+        document.getElementById('chartCurrent')
+    );
+
+    const chartVoltage = echarts.init(
+        document.getElementById('chartVoltage')
+    );
+
+    const currentMin = @(Model.CurrentMin?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "0");
+    const currentMax = @(Model.CurrentMax?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "1");
+    const voltageMin = @(Model.VoltageMin?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "0");
+    const voltageMax = @(Model.VoltageMax?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "1");
+
+    let lastCurrentLogTime = null;
+    let lastVoltageLogTime = null;
+
+    // CHART OPTION
+    function smartFormatter(value) {
+        const d = new Date(value);
+        return d.toLocaleTimeString();
+    }
+
+    function createOption(title, minVal, maxVal) {
+        return {
+            backgroundColor: 'transparent',
+            tooltip: {
+                trigger: 'axis'
+            },
+            grid: {
+                left: '4%',
+                right: '4%',
+                top: '10%',
+                bottom: '15%'
+            },
+            toolbox: {
+                feature: {
+                    saveAsImage: {},
+                    restore: {},
+                    dataZoom: {}
+                }
+            },
+            xAxis: {
+                type: 'time',
+                boundaryGap: false,
+
+                axisLabel: {
+                    formatter: smartFormatter,
+                    color: '#999'
+                },
+                axisLine: {
+                    lineStyle: {
+                        color: '#666'
+                    }
+                }
+            },
+            yAxis: {
+                type: 'value',
+                scale: true,
+
+                axisLabel: {
+                    color: '#999'
+                },
+                splitLine: {
+                    lineStyle: {
+                        type: 'dashed'
+                    }
+                }
+            },
+            dataZoom: [
+                {
+                    type: 'inside'
+                },
+                {
+                    type: 'slider',
+                    height: 18
+                }
+            ],
+            series: [
+                {
+                    name: title,
+                    type: 'line',
+                    smooth: true,
+                    showSymbol: false,
+                    connectNulls: true,
+                    lineStyle: {
+                        width: 3
+                    },
+                    areaStyle: {
+                        opacity: 0.08
+                    },
+                    data: [],
+                    markLine: {
+                        silent: true,
+                        symbol: 'none',
+                        lineStyle: {
+                            type: 'dashed'
+                        },
+                        data: [
+                            {
+                                yAxis: maxVal,
+                                name: 'MAX'
+                            },
+                            {
+                                yAxis: minVal,
+                                name: 'MIN'
+                            }
+                        ]
+                    }
+                }
+            ]
+        };
+    }
+
+    chartCurrent.setOption(
+        createOption('Current (A)', currentMin, currentMax)
+    );
+
+    chartVoltage.setOption(
+        createOption('Voltage (V)', voltageMin, voltageMax)
+    );
+
+    // UTIL
+    function formatTime(ms) {
+
+        const h = Math.floor(ms / 3600000);
+        const m = Math.floor((ms % 3600000) / 60000);
+        const s = Math.floor((ms % 60000) / 1000);
+        return `${h}h ${m}m ${s}s`;
+    }
+
+    function setStatus(text, color) {
+        const box = document.getElementById("statusBox");
+        box.innerText = text;
+        box.className = `status-box mt-2 text-white ${color}`;
+    }
+
+    // TIMER
+    function updateTimer() {
+        if (!startTime || !endTime)
+            return;
+        const now = new Date();
+        const timerBox =
+            document.getElementById("timerBox");
+        if (now < startTime) {
+
+            timerBox.innerText =
+                "Start in " +
+                formatTime(startTime - now);
+
+        }
+        else if (now <= endTime) {
+
+            timerBox.innerText =
+                formatTime(endTime - now) + " left";
+        }
+        else {
+            timerBox.innerText = "DONE";
+        }
+    }
+
+    // PROGRESS
+    function updateProgress() {
+        if (!startTime || !endTime)
+            return;
+        const total = endTime - startTime;
+        if (total <= 0)
+            return;
+        const now = new Date();
+        let percent = 0;
+        if (now < startTime) {
+            percent = 0;
+        }
+        else if (now > endTime) {
+            percent = 100;
+        }
+        else {
+            percent =
+                ((now - startTime) / total) * 100;
+        }
+        percent = Math.max(
+            0,
+            Math.min(100, percent)
+        );
+        document.getElementById("progressBar").style.width = percent + "%";
+        document.getElementById("progressText").innerText = percent.toFixed(1) + "%";
+    }
+
+    // SENSOR BAR
+    function updateBar(idBar, idText, value, max, unit) {
+
+        value = Number(value ?? 0);
+        max = Number(max ?? 1);
+        const percent = (value / max) * 100;
+        const safePercent = Math.min(percent, 100);
+        const bar = document.getElementById(idBar);
+        const textEl = document.getElementById(idText);
+        // width
+        bar.style.width = safePercent + "%";
+        // text
+        textEl.innerText = value.toFixed(2) + " " + unit;
+        // reset class
+        bar.className = "progress-bar";
+
+        textEl.classList.remove(
+            "text-success",
+            "text-warning",
+            "text-danger"
+        );
+
+        // color logic
+        if (percent > 100) {
+            bar.classList.add("bg-danger");
+            textEl.classList.add("text-danger");
+        }
+        else if (percent > 80) {
+            bar.classList.add("bg-warning");
+            textEl.classList.add("text-warning");
+        }
+        else {
+            bar.classList.add("bg-success");
+            textEl.classList.add("text-success");
+        }
+    }
+
+    // PUSH CHART DATA
+    function pushData(chart, value, logTime, type) {
+
+        if (!logTime)
+            return;
+        const ts = new Date(logTime).getTime();
+
+        // prevent duplicate
+        if (type === "current") {
+            if (lastCurrentLogTime === ts)
+                return;
+            lastCurrentLogTime = ts;
+        }
+        if (type === "voltage") {
+            if (lastVoltageLogTime === ts)
+                return;
+            lastVoltageLogTime = ts;
+        }
+
+        const option = chart.getOption();
+        const data = option.series[0].data || [];
+
+        data.push([
+            new Date(logTime),
+            value
+        ]);
+
+        // limit data
+        if (data.length > MAX_CHART_DATA) {
+            data.shift();
+        }
+
+        chart.setOption({
+            series: [{
+                data: data
+            }]
+        });
+    }
+
+    // LOAD HISTORY
+    async function loadChartHistory() {
+
+        try {
+            const res = await fetch(`/Main/GetChartLogs?prosesId=@Model.IdProses`);
+            if (!res.ok)
+                return;
+            const logs = await res.json();
+            if (!logs || logs.length === 0)
+                return;
+            const currentData = [];
+            const voltageData = [];
+
+            logs.forEach(x => {
+
+                if (x.current != null) {
+
+                    currentData.push([
+                        new Date(x.log_time),
+                        x.current
+                    ]);
+                }
+
+                if (x.voltage != null) {
+
+                    voltageData.push([
+                        new Date(x.log_time),
+                        x.voltage
+                    ]);
+                }
+            });
+
+            chartCurrent.setOption({
+                series: [{
+                    data: currentData
+                }]
+            });
+            chartVoltage.setOption({
+                series: [{
+                    data: voltageData
+                }]
+            });
+
+            // save last timestamp
+            const lastLog =
+                logs[logs.length - 1];
+
+            if (lastLog) {
+
+                const ts =
+                    new Date(lastLog.log_time).getTime();
+
+                lastCurrentLogTime = ts;
+                lastVoltageLogTime = ts;
+            }
+        } catch (err) {
+
+            console.error(
+                "Load history error:",
+                err
+            );
+        }
+    }
+
+    // FETCH REALTIME SENSOR
+    async function fetchRealtimeSensor() {
+
+        try {
+
+            const res = await fetch(`/Main/GetRealtimeLog?prosesId=@Model.IdProses`);
+
+            if (!res.ok)
+                return;
+
+            const data = await res.json();
+
+            if (!data)
+                return;
+
+            // CURRENT
+            updateBar(
+                "currentBar",
+                "currentText",
+                data.current,
+                currentMax,
+                "A"
+            );
+
+            // VOLTAGE
+            updateBar(
+                "voltageBar",
+                "voltageText",
+                data.voltage,
+                voltageMax,
+                "V"
+            );
+
+            // PUSH CHART
+            pushData(
+                chartCurrent,
+                data.current,
+                data.created_at,
+                "current"
+            );
+
+            pushData(
+                chartVoltage,
+                data.voltage,
+                data.created_at,
+                "voltage"
+            );
+
+            // HEARTBEAT
+            updateHeartbeat(data.lastHeartbeat);
+
+        } catch (err) {
+
+            console.error(
+                "Realtime sensor error:",
+                err
+            );
+        }
+    }
+
+    // HEARTBEAT
+    function updateHeartbeat(lastHeartbeat) {
+
+        if (!lastHeartbeat)
+            return;
+
+        const hb = new Date(lastHeartbeat);
+        const now = new Date();
+        const diff = (now - hb) / 1000;
+        const espBox = document.getElementById("espStatus");
+        const statusDot = document.getElementById("statusDot");
+        const heartbeatText = document.getElementById("heartbeatText");
+
+        heartbeatText.innerText =
+            "Last heartbeat: " +
+            hb.toLocaleString();
+
+            if (diff <= 120) {
+
+        espBox.innerText = "ONLINE";
+        espBox.className = "status-box mt-2 bg-success text-white";
+        statusDot.className = "status-dot status-online";
+    } else {
+
+        espBox.innerText = "OFFLINE";
+        espBox.className = "status-box mt-2 bg-danger text-white";
+        statusDot.className = "status-dot status-offline";
+    }
+    }
+
+    // FETCH MONITORING
+    async function fetchRealtime() {
+        try {
+            const res = await fetch(`/Main/GetMonitoringData?prosesId=@Model.IdProses`);
+
+            if (!res.ok)
+                return;
+            const data = await res.json();
+            if (!data)
+                return;
+
+            // update time
+            startTime =
+                data.start_time
+                    ? new Date(data.start_time)
+                    : null;
+            endTime =
+                data.end_time
+                    ? new Date(data.end_time)
+                    : null;
+
+            // status
+            switch (data.status_proses) {
+                case 1:
+                    setStatus("RUNNING", "bg-primary");
+                    break;
+                case 2:
+                    setStatus("DONE", "bg-success");
+                    break;
+                case 4:
+                    setStatus("SCHEDULED", "bg-warning");
+                    break;
+                default:
+                    setStatus("UNKNOWN", "bg-secondary");
+                    break;
+            }
+        } catch (err) {
+
+            console.error(
+                "Realtime monitoring error:",
+                err
+            );
+        }
+    }
+
+    // INIT
+    async function initMonitoring() {
+        await loadChartHistory();
+        await fetchRealtimeSensor();
+        await fetchRealtime();
+        updateTimer();
+        updateProgress();
+    }
+    initMonitoring();
+
+    // LOOP =========================================================
+
+    // timer smooth
+    setInterval(() => {
+        updateTimer();
+    }, TIMER_INTERVAL);
+
+    // realtime
+    setInterval(() => {
+        fetchRealtimeSensor();
+        fetchRealtime();
+        updateProgress();
+    }, UPDATE_INTERVAL);
+
+    // resize chart
+    window.addEventListener('resize', () => {
+        chartCurrent.resize();
+        chartVoltage.resize();
+    });
+
+</script>

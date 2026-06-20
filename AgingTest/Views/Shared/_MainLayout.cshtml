@@ -1,0 +1,722 @@
+﻿@using System.Security.Claims
+@using AgingTest.Models
+@inject AgingTest.Data.AppDbContext _context
+
+@{
+    var nama = User.Identity.IsAuthenticated ? User.Identity.Name : "";
+    var departemen = User.FindFirst("role")?.Value;
+    var title = ViewData["Title"] ?? "Aging X";
+    var serverTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+
+    var currentController = ViewContext.RouteData.Values["Controller"]?.ToString();
+    var currentAction = ViewContext.RouteData.Values["Action"]?.ToString();
+
+    var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+    var topNotifications = new List<NotificationModel>();
+    var unreadCount = 0;
+
+    if (!string.IsNullOrEmpty(userId))
+    {
+        int uid = int.Parse(userId);
+
+        topNotifications = _context.Notifications
+            .Where(n => n.id_user == uid && !n.is_read)
+            .OrderByDescending(n => n.created_at)
+            .Take(5)
+            .ToList();
+
+        unreadCount = _context.Notifications
+            .Count(n => n.id_user == uid && !n.is_read);
+    }
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@title - Aging X</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="@Url.Content("~/lib/fontawesome/css/all.min.css")" />
+    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+    <style>
+        body {
+            background-color: #F4F9FD;
+            color: #1f2937;
+            font-family: 'Segoe UI', sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* ================= SIDEBAR ================= */
+        .sidebar {
+            height: 100vh;
+            background: #55A2CA;
+            position: fixed;
+            width: 240px;
+            left: 0;
+            top: 0;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+        }
+
+            .sidebar.collapsed {
+                width: 75px;
+            }
+
+        .sidebar-header {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 2px solid rgba(255,255,255,0.5);
+            flex-shrink: 0;
+            margin-bottom: 10px;
+        }
+
+        .sidebar-menu {
+            flex: 1;
+            overflow-y: auto;
+            padding-top: 10px;
+        }
+
+        .sidebar a {
+            color: #ffffff;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            transition: 0.2s;
+            box-shadow: 4px 0 20px rgba(0,0,0,0.08);
+            font-size: 14px;
+        }
+
+            .sidebar a:hover {
+                background: rgba(255,255,255,0.15);
+                color: white;
+            }
+
+        .sidebar.collapsed a span,
+        .sidebar.collapsed .sidebar-header span,
+        .sidebar.collapsed .sidebar-footer span {
+            display: none;
+        }
+
+        .sidebar-footer {
+            padding: 10px;
+            font-size: 12px;
+            text-align: center;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            flex-shrink: 0;
+            background-color: #55A2CA;
+        }
+
+        /* ================= CONTENT ================= */
+        .content {
+            padding-left: 2px;
+            margin-left: 240px;
+            transition: all 0.3s ease;
+            min-height: 100vh;
+            background: #FCF8F8;
+        }
+            .content.expanded {
+                margin-left: 75px;
+            }
+
+        /* ================= NAVBAR ================= */
+        .navbar-custom {
+            background: #55A2CA;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            /* background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); */
+            border: none;
+            border-radius: 0px;
+            margin-bottom: 5px;
+            padding: 15px 10px;
+            position: sticky;
+            top: 0;
+            z-index: 999;
+        }
+            .navbar-custom .navbar-brand {
+                font-weight: 600;
+                color: #0f172a !important;
+            }
+
+            .navbar-custom .btn-outline-info {
+                border-color: #55A2CA;
+                color: #55A2CA;
+            }
+
+                .navbar-custom .btn-outline-info:hover {
+                    background: #55A2CA;
+                    color: white;
+                }
+
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(1px);
+            z-index: 998;
+            opacity: 0;
+            visibility: hidden;
+            transition: 0.3s;
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -6px;
+            right: -8px;
+            background: #ef4444;
+            color: white;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 50px;
+            font-weight: 600;
+        }
+        @@media (max-width: 992px) {
+            .sidebar
+
+        {
+            left: -240px;
+            width: 240px;
+            position: fixed;
+            z-index: 999;
+        }
+
+        .sidebar.mobile-show {
+            left: 0;
+        }
+
+        .sidebar-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .content {
+            margin-left: 0 !important;
+        }
+
+                .content.expanded {
+                    margin-left: 0 !important;
+                }
+        }
+
+        .active-menu {
+            background: #FCF8F8 !important;
+            color: #55A2CA !important;
+            font-weight: 600;
+            border-left: 4px solid #1f2937;
+        }
+
+            .active-menu i {
+                color: #55A2CA !important;
+            }
+
+        .sidebar-divider-text {
+            display: flex;
+            align-items: center;
+            margin: 12px 0;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            color: #bfc6cc;
+        }
+
+            .sidebar-divider-text::before,
+            .sidebar-divider-text::after {
+                content: "";
+                flex: 1;
+                border-bottom: 1px solid rgba(255,255,255,.2);
+            }
+
+            .sidebar-divider-text::before {
+                margin-right: 8px;
+            }
+
+            .sidebar-divider-text::after {
+                margin-left: 8px;
+            }
+    </style>
+
+    @RenderSection("Styles", required: false)
+</head>
+<body>
+    <div id="sidebarOverlay" class="sidebar-overlay"></div>
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h4 class="text-white">
+                <i class="fas fa-microchip"></i>
+                <span> Aging X</span>
+            </h4>
+        </div>
+        <a asp-controller="Main" asp-action="Index"
+           class="@(currentAction == "Index" ? "active-menu" : "")">
+            <i class="fas fa-home"></i>
+            <span>Home</span>
+        </a>
+        <div class="sidebar-divider-text">L I S T  M E N U</div>
+        <div class="px-3 mt-2 mb-2">
+            <input type="text"
+                   id="menuSearch"
+                   class="form-control form-control-sm rounded-2"
+                   placeholder="Search menu..."
+                   style="border-radius:0px;">
+        </div>
+        <div class="sidebar-menu">
+            
+            <a asp-controller="Main" asp-action="Dashboard" class="@(currentAction == "Dashboard" ? "active-menu" : "")"> <i class="fas fa-chart-line"></i> <span>Dashboard</span> </a>
+            <a asp-controller="Main" asp-action="DeviceAging" class="@(currentAction == "DeviceAging" ? "active-menu" : "")"> <i class="fas fa-chart-line"></i> <span>Device Aging</span> </a>
+            <a asp-controller="Main" asp-action="IoTDeviceData" class="@(currentAction == "IoTDeviceData" ? "active-menu" : "")"> <i class="fas fa-chart-line"></i> <span>IoT Device Aging</span> </a>
+            <a asp-controller="Main" asp-action="EntryDataLampu" class="@(currentAction == "EntryDataLampu" ? "active-menu" : "")"> <i class="fas fa-chart-line"></i> <span>Data Lampu Aging</span> </a>
+            <a asp-controller="Admin" asp-action="UserData" class="@(currentAction == "UserData" ? "active-menu" : "")"> <i class="fas fa-chart-line"></i> <span>Manajemen User</span> </a>
+            <a asp-controller="Main" asp-action="HistoriPengujian" class="@(currentAction == "HistoriPengujian" ? "active-menu" : "")"> <i class="fas fa-chart-line"></i> <span>Histori Pengujian</span> </a>
+            @* <a asp-controller="Main" asp-action="DashboardTesting" class="@(currentAction == "DashboardTesting" ? "active-menu" : "")"> <i class="fas fa-chart-line"></i> <span>Dashboard Testing</span> </a>
+            <a asp-controller="Main" asp-action="Testing" class="@(currentAction == "Testing" ? "active-menu" : "")"> <i class="fas fa-chart-line"></i> <span>Testing</span> </a> *@
+
+        </div>
+        <div class="sidebar-footer text-white">
+            <div>
+                <span>© @DateTime.Now.Year Aging X - v1.0.0</span>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="content" id="content">
+
+        <nav class="navbar navbar-expand-lg navbar-light navbar-custom">
+            <div class="container-fluid">
+                <div class="d-flex align-items-center gap-3">
+                    <button id="toggleSidebar" class="btn btn-sm btn-outline-info rounded-0 text-white">
+                        <i class="fas fa-bars"></i>
+                    </button>
+
+                    <div class="dropdown position-relative d-none d-lg-block">
+                        <a class="text-decoration-none dropdown-toggle d-flex align-items-center gap-2"
+                           href="#"
+                           role="button"
+                           data-bs-toggle="dropdown">
+
+                            @* <i class="fas fa-clock me-1 text-white"></i> *@
+                            <span id="actualTimeFull" class="text-white"></span>
+                        </a>
+
+                        <div class="dropdown-menu dropdown-menu-end p-3 shadow"
+                             style="min-width:300px; background:#1f2937; color:white; border:none; border-radius:0px;">
+                            <div class="small text-white">Server Time</div>
+                            <div class="fw-semibold fs-6" id="serverTimeDisplay"></div>
+                        </div>
+                    </div>
+
+                </div>
+                @* <span class="navbar-brand text-info">@title</span> *@
+                <div class="d-flex align-items-center ms-auto gap-4">
+                    <a asp-controller="Main" asp-action="TesNotification">Tes Notifikasi</a>
+
+                    <div class="dropdown position-relative">
+                        <a class="text-white fs-5 position-relative"
+                           href="#"
+                           role="button"
+                           data-bs-toggle="dropdown">
+
+                            <i class="fas fa-bell"></i>
+
+                            @if (unreadCount > 0)
+                            {
+                                <span class="notification-badge">@unreadCount</span>
+                            }
+                        </a>
+
+                        <div class="dropdown-menu dropdown-menu-end shadow border-0 p-0 overflow-hidden"
+                             style="width:380px; border-radius:12px;">
+
+                            <div class="d-flex justify-content-between align-items-center p-3 border-bottom bg-light">
+                                <div>
+                                    <div class="fw-bold">Notifications</div>
+                                    @* <small class="text-muted" id="notifUnreadText" data-count="@unreadCount"> @unreadCount unread notification</small> *@
+                                </div>
+
+                                <a asp-controller="Main"
+                                   asp-action="NotificationIndex"
+                                   class="small text-decoration-none">
+                                    View All
+                                </a>
+                            </div>
+
+                            <div class="notification-dropdown-body" style="max-height:400px; overflow-y:auto;">
+
+                            @* <div class="p-2 border-bottom fw-semibold">
+                                Notifikasi
+                            </div> *@
+
+                            @if (topNotifications.Any())
+                            {
+                                    @foreach (var notif in topNotifications)
+                                    {
+                                        <a class="dropdown-item border-bottom py-3 px-3 @(notif.is_read ? "" : "bg-light")"
+                                           asp-controller="Main"
+                                           asp-action="NotificationIndex"
+                                           asp-route-id="@notif.id_notif">
+
+                                            <div class="d-flex justify-content-between">
+
+                                                <div class="fw-semibold text-dark">
+                                                    @notif.title
+                                                </div>
+
+                                                @if (!notif.is_read)
+                                                {
+                                                    <span class="badge bg-danger rounded-pill">
+                                                        New
+                                                    </span>
+                                                }
+
+                                            </div>
+
+                                            <div class="small text-muted mt-1">
+                                                @{
+                                                    var message = notif.message ?? "";
+                                                    var shortMsg = message.Length > 70
+                                                    ? message.Substring(0, 70) + "..."
+                                                    : message;
+                                                }
+
+                                                @shortMsg
+                                            </div>
+
+                                            <div class="small text-secondary mt-2">
+                                                <i class="fas fa-clock me-1"></i>
+                                                @notif.created_at.ToString("dd MMM yyyy HH:mm")
+                                            </div>
+                                        </a>
+                                    }
+
+                                <div class="text-center p-1">
+                                        <a asp-controller="Main"
+                                           asp-action="NotificationIndex"
+                                       class="small text-decoration-none">
+                                        Lihat Semua
+                                    </a>
+                                </div>
+                            }
+                            else
+                            {
+                                    <div class="p-3 text-center text-muted small notif-empty">
+                                        Tidak ada notifikasi
+                                    </div>
+                            }
+                        </div>
+                        </div>
+                    </div>
+
+                    <div class="dropdown">
+                        <a class="dropdown-toggle text-decoration-none d-flex align-items-center gap-2"
+                           href="#"
+                           role="button"
+                           data-bs-toggle="dropdown">
+
+                            <i class="fas fa-user-circle fs-5 text-white"></i>
+                            <div class="d-flex flex-column text-start text-white">
+                                <span class="fw-semibold">@nama</span>
+                            </div>
+                        </a>
+
+                        <ul class="dropdown-menu dropdown-menu-end shadow"
+                            style="background:white; color:#1f2937; border:none; border-radius:0px; min-width:250px;">
+
+                            <li class="px-3 py-2">
+                                <div class="fw-semibold">@User.FindFirst("Badge")?.Value</div>
+                                <small class="text-info">@departemen</small>
+                            </li>
+                            <li class="px-3 py-2 d-lg-none">
+                                <div class="small text-muted">Local Time</div>
+                                <div class="fw-semibold text-dark" id="actualTimeMobile"></div>
+
+                                <div class="small text-muted mt-2">Server Time</div>
+                                <div class="fw-semibold text-dark" id="serverTimeMobile"></div>
+                            </li>
+
+                            <li class="d-lg-none">
+                                <hr class="dropdown-divider" />
+                            </li>
+                            <li><hr class="dropdown-divider" style="border-color:rgba(0,0,0,0.1)" /></li>
+
+                            <li>
+                                <a class="dropdown-item" href="#">
+                                    <i class="fas fa-id-badge me-2"></i> Profile
+                                </a>
+                            </li>
+
+                            <li>
+                                <a class="dropdown-item text-danger"
+                                   asp-controller="Auth"
+                                   asp-action="Logout">
+                                    <i class="fas fa-sign-out-alt me-2"></i> Logout
+                                </a>
+                            </li>
+                        </ul>
+
+                    </div>
+
+                </div>
+            </div>
+        </nav>
+
+        @RenderBody()
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+    <script>
+        const toggleBtn = document.getElementById("toggleSidebar");
+        const sidebar = document.getElementById("sidebar");
+        const content = document.getElementById("content");
+        const overlay = document.getElementById("sidebarOverlay");
+        const menuSearch = document.getElementById("menuSearch");
+        const menuLinks = document.querySelectorAll(".sidebar-menu a");
+
+        menuSearch.addEventListener("keyup", function () {
+
+            const keyword = this.value.toLowerCase();
+
+            menuLinks.forEach(link => {
+
+                const text = link.innerText.toLowerCase();
+
+                if (text.includes(keyword)) {
+                    link.style.display = "flex";
+                } else {
+                    link.style.display = "none";
+                }
+
+            });
+
+        });
+        toggleBtn.addEventListener("click", function () {
+            if (window.innerWidth <= 992) {
+                sidebar.classList.toggle("mobile-show");
+                overlay.classList.toggle("active");
+            } else {
+                sidebar.classList.toggle("collapsed");
+                content.classList.toggle("expanded");
+            }
+        });
+
+        overlay.addEventListener("click", function () {
+            sidebar.classList.remove("mobile-show");
+            overlay.classList.remove("active");
+        });
+
+        window.addEventListener("resize", function () {
+            if (window.innerWidth > 992) {
+                sidebar.classList.remove("mobile-show");
+                overlay.classList.remove("active");
+            }
+        });
+
+        let serverTime = new Date("@serverTime".replace(" ", "T"));
+
+        function formatFullIndo(date) {
+            return date.toLocaleString("id-ID", {
+                weekday: "long",
+                day: "2-digit",
+                month: "long",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit"
+            });
+        }
+
+        function updateClocks() {
+
+            const localNow = new Date();
+            const wibNow = new Date(localNow.toLocaleString("en-US", { timeZone: "Asia/Jakarta" }));
+
+            const formattedWIB = formatFullIndo(wibNow);
+
+            document.getElementById("actualTimeFull").innerHTML = formattedWIB + " ( Local Time)";
+
+            const mobileClock = document.getElementById("actualTimeMobile");
+            if (mobileClock) {
+                mobileClock.innerHTML = formattedWIB;
+            }
+
+            serverTime.setSeconds(serverTime.getSeconds() + 1);
+            const formattedServer = formatFullIndo(serverTime);
+
+            document.getElementById("serverTimeDisplay").innerHTML = formattedServer;
+
+            const mobileServer = document.getElementById("serverTimeMobile");
+            if (mobileServer) {
+                mobileServer.innerHTML = formattedServer;
+            }
+        }
+        updateClocks();
+        setInterval(updateClocks, 1000);
+    </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+
+    <script>
+
+        const connection=new signalR.HubConnectionBuilder()
+            .withUrl("/notificationHub")
+            .build();
+
+        connection.on("ReceiveNotification",function(notif){
+
+            console.log("Notif masuk:",notif);
+
+            updateBadge();
+            insertNotification(notif);
+            updateUnreadText();
+            showToast(notif.title,notif.message);
+
+        });
+
+        connection.start().catch(err=>console.error(err));
+
+        function updateBadge(){
+
+            let badge=document.querySelector(".notification-badge");
+
+            if(badge){
+
+                badge.innerText=parseInt(badge.innerText)+1;
+
+            }else{
+
+                const bell=document.querySelector(".fa-bell").parentElement;
+
+                bell.insertAdjacentHTML("beforeend",
+                    `<span class="notification-badge">1</span>`);
+            }
+        }
+
+        function updateUnreadText(){
+
+            const text=document.querySelector("#notifUnreadText");
+
+            if(text){
+
+                let current=parseInt(text.dataset.count || "0");
+                current++;
+
+                text.dataset.count=current;
+                text.innerText=`${current} unread notification`;
+            }
+        }
+
+        function insertNotification(notif){
+
+            const dropdown=document.querySelector(".notification-dropdown-body");
+
+            if(!dropdown) return;
+
+            const empty=document.querySelector(".notif-empty");
+
+            if(empty) empty.remove();
+
+            const item=document.createElement("a");
+
+            item.href="/Main/NotificationIndex";
+
+            item.className="dropdown-item border-bottom py-3 px-3 bg-light";
+
+            item.innerHTML=`
+                <div class="d-flex justify-content-between align-items-start">
+
+                    <div class="fw-semibold text-dark">
+                        ${notif.title}
+                    </div>
+
+                    <span class="badge bg-danger rounded-pill">
+                        New
+                    </span>
+
+                </div>
+
+                <div class="small text-muted mt-1">
+                    ${notif.message}
+                </div>
+
+                <div class="small text-secondary mt-2">
+                    <i class="fas fa-clock me-1"></i>
+                    ${notif.createdAt}
+                </div>
+            `;
+
+            dropdown.prepend(item);
+        }
+
+        function showToast(title,message){
+
+            const toastId="toast_"+Date.now();
+
+            const toastHtml=`
+            <div id="${toastId}"
+                 class="toast show position-fixed bottom-0 end-0 m-4 border-0 shadow"
+                 style="z-index:9999;min-width:350px;border-radius:16px;overflow:hidden;">
+
+                <div class="bg-danger text-white p-3 fw-semibold">
+                    <i class="fas fa-bell me-2"></i>
+                    ${title}
+                </div>
+
+                <div class="bg-white p-3">
+
+                    <div class="text-dark">
+                        ${message}
+                    </div>
+
+                    <div class="text-end mt-3">
+
+                        <button class="btn btn-sm btn-outline-secondary"
+                                onclick="document.getElementById('${toastId}').remove()">
+                            Close
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </div>`;
+
+            document.body.insertAdjacentHTML("beforeend",toastHtml);
+
+            setTimeout(()=>{
+
+                const toast=document.getElementById(toastId);
+
+                if(toast){
+                    toast.remove();
+                }
+
+            },5000);
+        }
+
+    </script>
+    @RenderSection("Scripts", required: false)
+
+</body>
+</html>

@@ -1,0 +1,151 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+    Layout = "~/Views/Shared/_MainLayout.cshtml";
+    ViewData["Title"] = "Realtime Monitoring (ECharts)";
+}
+
+<script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+
+<div class="container-fluid">
+
+    <h3 class="fw-bold mb-4">⚡ Realtime Monitoring (ECharts)</h3>
+
+    <div class="card p-4 shadow-sm">
+        <div id="chart" style="height:400px;"></div>
+    </div>
+
+</div>
+
+<script>
+
+    const chartDom = document.getElementById('chart');
+    const myChart = echarts.init(chartDom);
+
+    let dataCurrent = [];
+    let dataVoltage = [];
+
+    const MAX_POINTS = 100; // limit biar ringan
+
+    // 🔥 INIT DATA AWAL
+    function initData() {
+        let now = new Date();
+
+        for (let i = 0; i < 50; i++) {
+            dataCurrent.push({
+                name: now.toString(),
+                value: [now, (Math.random() * 10).toFixed(2)]
+            });
+
+            dataVoltage.push({
+                name: now.toString(),
+                value: [now, (200 + Math.random() * 40).toFixed(2)]
+            });
+
+            now = new Date(now.getTime() - 2000);
+        }
+    }
+
+    initData();
+
+    // 🔥 CONFIG CHART
+    const option = {
+        tooltip: {
+            trigger: 'axis'
+        },
+        legend: {
+            data: ['Current (A)', 'Voltage (V)']
+        },
+        toolbox: {
+            feature: {
+                dataZoom: { yAxisIndex: 'none' },
+                restore: {},
+                saveAsImage: {}
+            }
+        },
+        xAxis: {
+            type: 'time'
+        },
+        yAxis: [
+            {
+                type: 'value',
+                name: 'Current (A)'
+            },
+            {
+                type: 'value',
+                name: 'Voltage (V)'
+            }
+        ],
+        dataZoom: [
+            {
+                type: 'inside',
+                xAxisIndex: 0
+            },
+            {
+                type: 'slider',
+                xAxisIndex: 0
+            }
+        ],
+        series: [
+            {
+                name: 'Current (A)',
+                type: 'line',
+                showSymbol: false,
+                data: dataCurrent,
+                smooth: true
+            },
+            {
+                name: 'Voltage (V)',
+                type: 'line',
+                yAxisIndex: 1,
+                showSymbol: false,
+                data: dataVoltage,
+                smooth: true
+            }
+        ]
+    };
+
+    myChart.setOption(option);
+
+    // 🔥 REALTIME UPDATE
+    function updateData() {
+
+        const now = new Date();
+
+        const newCurrent = (Math.random() * 10).toFixed(2);
+        const newVoltage = (200 + Math.random() * 40).toFixed(2);
+
+        dataCurrent.push({
+            name: now.toString(),
+            value: [now, newCurrent]
+        });
+
+        dataVoltage.push({
+            name: now.toString(),
+            value: [now, newVoltage]
+        });
+
+        // 🔥 LIMIT DATA
+        if (dataCurrent.length > MAX_POINTS) {
+            dataCurrent.shift();
+            dataVoltage.shift();
+        }
+
+        myChart.setOption({
+            series: [
+                { data: dataCurrent },
+                { data: dataVoltage }
+            ]
+        });
+    }
+
+    // 🔁 LOOP REALTIME
+    setInterval(updateData, 2000);
+
+    // 🔥 RESPONSIVE
+    window.addEventListener('resize', function () {
+        myChart.resize();
+    });
+
+</script>

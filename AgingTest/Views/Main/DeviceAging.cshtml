@@ -1,0 +1,288 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@model IEnumerable<AgingTest.Models.AgingDeviceModel>
+@using System.Text.Encodings.Web
+
+@{
+    Layout = "~/Views/Shared/_MainLayout.cshtml";
+    ViewData["Title"] = "Device Aging";
+}
+
+<div class="container">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-semibold mb-1">Device Aging Management</h3>
+            <small class="text-muted">Manage aging device and IoT module connection</small>
+        </div>
+
+        <button type="button" class="btn btn-primary rounded-3 px-4 shadow-sm" data-bs-toggle="modal" data-bs-target="#createModal">
+            <i class="fa-solid fa-plus me-2"></i>Add Device
+        </button>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-3">
+            @TempData["Success"]
+            <button class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm rounded-3">
+            @TempData["Error"]
+            <button class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="card border-2 shadow-sm rounded-0 overflow-hidden">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table id="deviceTable" class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>No</th>
+                            <th>Device</th>
+                            <th>Current (A)</th>
+                            <th>Voltage (V)</th>
+                            <th>IoT Module</th>
+                            <th>Status</th>
+                            <th>Downtime</th>
+                            <th width="120">Action</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @{
+                            int no = 1;
+                        }
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td>@no</td>
+                                <td>
+                                    <div class="fw-semibold">@item.device_name</div>
+                                    <small class="text-muted">@item.device_code</small>
+                                </td>
+                                <td>@item.max_current</td>
+                                <td>@item.max_voltage</td>
+                                <td>
+                                    <div>@item.IoTModules?.module_name</div>
+                                    <small class="text-muted">@item.IoTModules?.mac_address</small>
+                                </td>
+                                <td>
+                                    @if (item.device_status)
+                                    {
+                                        <span class="badge rounded-pill bg-success-subtle text-success px-3 py-2">Online</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge rounded-pill bg-danger-subtle text-danger px-3 py-2">Offline</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (item.is_downtime == true)
+                                    {
+                                        <span class="badge rounded-pill bg-danger px-3 py-2">Downtime</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge rounded-pill bg-secondary-subtle px-3 py-2">-</span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="d-flex justify-content-center gap-2">
+                                        <button type="button" class="btn btn-sm btn-warning rounded-3"
+                                                onclick='editDevice(@item.id_device,"@Html.Raw(JavaScriptEncoder.Default.Encode(item.device_name ?? ""))","@Html.Raw(JavaScriptEncoder.Default.Encode(item.device_code ?? ""))","@item.id_module","@item.max_current","@item.max_voltage","@item.device_status.ToString().ToLower()","@item.is_downtime.ToString().ToLower()","@Html.Raw(JavaScriptEncoder.Default.Encode(item.remarks ?? ""))")'>
+                                            <i class="fa-solid fa-pen"></i>
+                                        </button>
+                                        <a asp-action="DeleteDeviceAging"
+                                           asp-route-id="@item.id_device"
+                                           class="btn btn-sm btn-danger rounded-3"
+                                           onclick="return confirm('Delete this device?')">
+                                            <i class="fa-solid fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            no++;
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CREATE -->
+<div class="modal fade" id="createModal">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-2 rounded-0">
+            <form asp-action="CreateDeviceAging" method="post">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-semibold">Add Device Aging</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Device Name</label>
+                            <input name="device_name" class="form-control rounded-3" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Device Code</label>
+                            <input name="device_code" class="form-control rounded-3" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">IoT Module</label>
+
+                            <select name="id_module" class="form-select rounded-3">
+                                <option value="">Select Module</option>
+
+                                @foreach (var iot in ViewBag.IoTList)
+                                {
+                                    if (!ViewBag.UsedModules.Contains(iot.id_module))
+                                    {
+                                        <option value="@iot.id_module">
+                                            @iot.module_name (@iot.mac_address)
+                                        </option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Max Current</label>
+                            <input name="max_current" type="number" step="0.01" class="form-control rounded-3"  />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Max Voltage</label>
+                            <input name="max_voltage" type="number" step="0.01" class="form-control rounded-3"  />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Remarks</label>
+                            <textarea name="remarks" class="form-control rounded-3"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light rounded-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary rounded-3 px-4">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- EDIT -->
+<div class="modal fade" id="editModal">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-2 rounded-0">
+            <form asp-action="EditDeviceAging" method="post">
+                <input type="hidden" name="id_device" id="edit_id" />
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-semibold">Edit Device Aging</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Device Name</label>
+                            <input id="edit_nama" name="device_name" class="form-control rounded-3" required />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Device Code</label>
+                            <input id="edit_kode" name="device_code" class="form-control rounded-3" required />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">IoT Module</label>
+
+                            <select id="edit_iot" name="id_module" class="form-select rounded-3">
+                                @foreach (var iot in ViewBag.IoTList)
+                                {
+                                    <option value="@iot.id_module">
+                                        @iot.module_name (@iot.mac_address)
+                                    </option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label">Max Current</label>
+                            <input id="edit_current" name="max_current" type="number" step="0.01" class="form-control rounded-3" />
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label">Max Voltage</label>
+                            <input id="edit_voltage" name="max_voltage" type="number" step="0.01" class="form-control rounded-3" />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Status</label>
+
+                            <select id="edit_status" name="device_status" class="form-select rounded-3">
+                                <option value="true">Online</option>
+                                <option value="false">Offline</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Downtime</label>
+
+                            <select id="edit_downtime" name="is_downtime" class="form-select rounded-3">
+                                <option value="false">Normal</option>
+                                <option value="true">Downtime</option>
+                            </select>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label">Remarks</label>
+                            <textarea id="edit_remarks" name="remarks" class="form-control rounded-3"></textarea>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light rounded-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning  rounded-3 px-4">Update</button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+
+    <script>
+
+        $('#deviceTable').DataTable({
+            responsive: true,
+            pageLength: 10,
+            language: { search: "", searchPlaceholder: "Search device..." }
+        });
+
+        function editDevice(id,name,code,iot,current,voltage,status,downtime,remarks){
+            $('#edit_id').val(id);
+            $('#edit_nama').val(name);
+            $('#edit_kode').val(code);
+            $('#edit_iot').val(iot);
+            $('#edit_current').val(current);
+            $('#edit_voltage').val(voltage);
+            $('#edit_status').val(status);
+            $('#edit_downtime').val(downtime);
+            $('#edit_remarks').val(remarks);
+            new bootstrap.Modal(document.getElementById('editModal')).show();
+        }
+
+    </script>
+
+}
+
+
