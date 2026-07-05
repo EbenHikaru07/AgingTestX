@@ -30,7 +30,7 @@ namespace AgingTest.Models
                 {
                     user_badge = "IB0058",
                     username = "Eben",
-                    user_role = "developer",
+                    user_role = "engineer",
                     user_status = true,
                     created_at = DateTime.Now
                 };

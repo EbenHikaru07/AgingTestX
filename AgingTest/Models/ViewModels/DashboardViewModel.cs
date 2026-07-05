@@ -33,7 +33,13 @@
         public string ProcessStatus { get; set; }
         public int ProgressPercent { get; set; }
         public bool CanStart { get; set; }
-
+        public bool CanStartAging { get; set; }
         public string OperationalStatus { get; set; }
+
+        public string DeviceIndicator { get; set; }
+        public string DeviceAction { get; set; }
+
+        public string ModuleIndicator { get; set; }
+        public string ModuleAction { get; set; }
     }
 }

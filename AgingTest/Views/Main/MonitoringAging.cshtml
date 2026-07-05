@@ -12,6 +12,15 @@
 <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
 
 <style>
+    .card-top {
+        height: 140px;
+        border-radius: 20px;
+        transition: .3s;
+    }
+
+        .card-top:hover {
+            transform: translateY(-3px);
+        }
     .module-card {
         background: linear-gradient( 135deg, #ffffff, #f8fafc );
         border-radius: 20px;
@@ -59,11 +68,9 @@
         border-radius: 0px;
         background: #fff;
         box-shadow: 0 4px 12px rgba(0,0,0,.04);
-        transition: .25s;
     }
 
         .card:hover {
-            transform: translateY(-2px);
             box-shadow: 0 10px 30px rgba(0,0,0,.08);
         }
 
@@ -106,28 +113,44 @@
 
 <div class="container-fluid">
 
-    <h3 class="fw-bold mb-4">📊 Monitoring Aging</h3>
+    <h3 class="fw-bold mb-4">Monitoring Aging</h3>
 
     <!-- 🔥 TOP -->
     <div class="row g-4">
 
         <div class="col-lg-3">
-            <div class="card p-3 shadow-sm">
-                <small>Device</small>
-                <strong>@Model.DeviceName</strong><br />
-                <small>@Model.DeviceCode</small>
+            <div class="card p-4 shadow-sm card-top module-card card-top">
+                <small class="text-uppercase text-muted">
+                    Aging Device
+                </small>
+
+                <h4 class="fw-bold mt-3 text-dark">
+                    @Model.DeviceName
+                </h4>
+
+                <small class="text-secondary">
+                    @Model.DeviceCode
+                </small>
             </div>
         </div>
         <div class="col-lg-3">
-            <div class="card p-3 shadow-sm">
-                <small>Lampu</small>
-                <strong>@Model.LampuName</strong><br />
-                <small>@Model.LampuCode</small>
+            <div class="card p-4 shadow-sm card-top module-card card-top">
+                <small class="text-uppercase text-muted">
+                    Lamp Under Test
+                </small>
+
+                <h4 class="fw-bold mt-3 text-dark">
+                    @Model.LampuName
+                </h4>
+
+                <small class="text-secondary">
+                    @Model.LampuCode
+                </small>
             </div>
         </div>
 
         <div class="col-lg-3">
-            <div class="card p-4 shadow-sm module-card">
+            <div class="card p-4 shadow-sm card-top module-card">
                 <div class="text-center">
 
                     <small class="text-uppercase text-muted">
@@ -159,8 +182,10 @@
             </div>
         </div>
         <div class="col-lg-3">
-            <div class="card p-3 text-center shadow-sm">
-                <small>Status Pengujian</small>
+            <div class="card p-3 text-center shadow-sm card-top">
+                <small class="text-uppercase text-muted">
+                    Status Pengujian
+                </small>
                 <div id="statusBox" class="status-box mt-2">@Model.StatusText</div>
             </div>
         </div>
@@ -172,7 +197,7 @@
 
         <!-- 🔥 PROGRESS (LEBAR) -->
         <div class="col-lg-6">
-            <div class="card shadow-sm border-0">
+            <div class="card p-4 shadow-sm border-0 h-75">
                 <div class="card-body">
 
                     <div class="d-flex justify-content-between mb-2">
@@ -195,12 +220,22 @@
 
         <!-- 🔥 CURRENT -->
         <div class="col-lg-3">
-            <div class="card p-4 shadow-sm text-center h-100">
-                <h6 class="text-muted">⚡ Current</h6>
+            <div class="card p-4 shadow-sm text-center h-75">
+                <div class="text-center">
 
-                <!-- TEXT BESAR -->
-                <div id="currentText" class="fw-bold" style="font-size: 2rem;">
-                    @(Model.CurrentValue ?? 0) A
+                    <i class="bi bi-lightning-charge-fill text-warning fs-1"></i>
+
+                    <div class="text-muted mt-2">
+                        Current
+                    </div>
+
+                    <div id="currentText"
+                         class="display-4 fw-bold text-primary mt-1">
+
+                        @(Model.CurrentValue ?? 0) A
+
+                    </div>
+
                 </div>
 
                 <div class="progress mt-3">
@@ -211,9 +246,23 @@
 
         <!-- 🔥 VOLTAGE -->
         <div class="col-lg-3">
-            <div class="card p-3 text-center shadow-sm">
-                <small>Timer</small>
-                <div id="timerBox" class="timer-box mt-2">-</div>
+            <div class="card p-4 shadow-sm h-75">
+
+                <div class="text-center">
+
+                    <i class="bi bi-stopwatch fs-1 text-success"></i>
+
+                    <div class="text-muted mt-1">
+                        Elapsed Time
+                    </div>
+
+                    <div id="timerBox"
+                         class="fw-bold mt-1" style="font-size: 30px;">
+                        -
+                    </div>
+
+                </div>
+
             </div>
         </div>
     </div>
@@ -232,10 +281,10 @@
         </div>
 
         <div class="col-lg-12 mt-4">
-            <div class="card p-4 shadow-sm">
+            <div class="card p-4 shadow-sm d-none">
 
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5>📈 Voltage Chart</h5>
+                <div class="d-none justify-content-between align-items-center mb-3">
+                    <h5>Voltage Chart</h5>
 
                 </div>
 

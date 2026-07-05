@@ -2,10 +2,13 @@
     For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 *@
 @model IEnumerable<AgingTest.Models.UserModel>
+@using System.Security.Claims
 
 @{
     ViewData["Title"] = "User List";
     Layout = "~/Views/Shared/_MainLayout.cshtml";
+    var role = User.FindFirst(ClaimTypes.Role)?.Value;
+
 }
 <style>
     table.dataTable thead th {
@@ -123,9 +126,12 @@
                     <div class="mb-3">
                         <label>Role</label>
                         <select name="user_role" class="form-select">
-                            <option value="developer">Developer</option>
+                            @if (User.IsInRole("admin"))
+                            {
+                            <option value="admin">Admin</option>
+                            }
                             <option value="engineer">Engineer</option>
-                            <option value="technician">Technician</option>
+                            <option value="operator">Operator</option>
                         </select>
                     </div>
 

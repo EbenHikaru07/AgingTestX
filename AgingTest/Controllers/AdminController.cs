@@ -5,9 +5,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
 using System.Security.Cryptography;
+using Microsoft.AspNetCore.Authorization;
 
 namespace AgingTest.Controllers
 {
+    [Authorize]
     public class AdminController : Controller
     {
         private readonly AppDbContext _context;

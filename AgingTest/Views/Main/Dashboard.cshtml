@@ -61,7 +61,7 @@
         </div>
 
         <div class="col-md-3">
-            <div class="card border-0 shadow-sm rounded-4 p-3 bg-primary">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-primary text-white">
                 <small>Running Device</small>
                 <h2 class="fw-bold mb-0">@running</h2>
             </div>
@@ -78,11 +78,8 @@
 
     <div class="card border-0 shadow-sm rounded-4">
         <div class="card-body">
-
             <div class="table-responsive">
-
                 <table id="dashboardTable" class="table align-middle table-hover">
-
                     <thead class="table-light">
                         <tr>
                             <th>Device</th>
@@ -95,32 +92,29 @@
                     </thead>
 
                     <tbody>
-
                         @foreach (var item in Model)
                         {
                             <tr>
-
                                 <td>
-                                    <div class="fw-semibold">@item.nama_device</div>
-                                    <small class="text-muted">@item.kode_device</small>
-                                </td>
+                                    <div class="fw-bold">
+                                        @item.nama_device
+                                    </div>
 
+                                    <small class="text-muted">
+                                        @item.kode_device
+                                    </small>
+                                </td>
                                 <td>
 
                                     <div class="d-flex align-items-center">
 
-                                        @if (item.ModuleStatus == "ONLINE")
-                                        {
-                                            <span class="status-dot status-online"></span>
-                                        }
-                                        else if (item.ModuleStatus == "OFFLINE")
-                                        {
-                                            <span class="status-dot status-offline"></span>
-                                        }
-                                        else
-                                        {
-                                            <span class="status-dot status-downtime"></span>
-                                        }
+                                        <span class="status-dot
+                @(item.ModuleStatus == "ONLINE"
+                                                              ? "status-online"
+                                                              : item.ModuleStatus == "OFFLINE"
+                                                                  ? "status-offline"
+                                                                  : "status-downtime")">
+                                    </span>
 
                                         <div>
 
@@ -130,7 +124,7 @@
 
                                             <small class="text-muted">
                                                 Last beat :
-                                                @(item.LastHeartbeat?.ToString("dd:MM:yy/HH:mm:ss") ?? "-")
+                                                @(item.LastHeartbeat?.ToString("dd MMM yyyy HH:mm:ss") ?? "-")
                                             </small>
 
                                         </div>
@@ -140,91 +134,98 @@
                                 </td>
                                 <td>
 
-                                    @switch (item.OperationalStatus)
+                                @if (item.OperationalStatus == "RUNNING")
                                     {
-                                        case "RUNNING":
+                                        <span class="badge bg-primary rounded-0 px-3 py-2">
+                                            RUNNING
+                                        </span>
+                                    }
 
-                                            <span class="badge bg-primary rounded-pill">
-                                                RUNNING
-                                            </span>
+                                    else if (item.OperationalStatus == "READY")
+                                    {
+                                        <span class="badge bg-success rounded-0 px-3 py-2">
+                                            READY
+                                        </span>
+                                    }
 
-                                            break;
+                                    else if (item.OperationalStatus == "FINISHED")
+                                    {
+                                        <span class="badge bg-info rounded-0 px-3 py-2">
+                                            READY
+                                        </span>
+                                    }
 
-                                        case "DOWNTIME":
+                                    else if (item.OperationalStatus == "MODULE OFF")
+                                    {
+                                        <a asp-action="IoTDeviceData"
+                                           asp-route-deviceId="@item.id_device"
+                                           class="btn btn-warning btn-sm rounded-0">
 
-                                            <span class="badge bg-danger rounded-pill">
-                                                DOWNTIME
-                                            </span>
+                                            MODULE OFF
 
-                                            break;
+                                        </a>
+                                    }
 
-                                        case "OFFLINE":
+                                    else if (item.OperationalStatus == "DEVICE OFF")
+                                    {
+                                        <a asp-action="DeviceAging"
+                                           asp-route-deviceId="@item.id_device"
+                                           class="btn btn-secondary btn-sm rounded-0">
 
-                                            <span class="badge bg-secondary rounded-pill">
-                                                OFFLINE
-                                            </span>
+                                            DEVICE OFF
 
-                                            break;
+                                        </a>
+                                    }
 
-                                        case "READY":
+                                    else if (item.OperationalStatus == "DOWNTIME")
+                                    {
+                                        <a asp-action="DeviceAging"
+                                           asp-route-deviceId="@item.id_device"
+                                           class="btn btn-danger btn-sm rounded-0">
 
-                                            <span class="badge bg-success rounded-pill">
-                                                READY
-                                            </span>
+                                            DOWNTIME
 
-                                            break;
+                                        </a>
+                                    }
 
-                                        case "FINISHED":
+                                    else if (item.OperationalStatus == "NO MODULE")
+                                    {
+                                        <a asp-action="DeviceAging"
+                                           asp-route-deviceId="@item.id_device"
+                                           class="btn btn-dark btn-sm rounded-0">
 
-                                            <span class="badge bg-info rounded-pill">
-                                                FINISHED
-                                            </span>
+                                            NO MODULE
 
-                                            break;
-
-                                        default:
-
-                                            <span class="badge bg-dark rounded-pill">
-                                                DISABLED
-                                            </span>
-
-                                            break;
+                                        </a>
                                     }
 
                                 </td>
-                              
-                                <td>
+                                <td style="min-width:220px">
 
                                     @if (item.IsRunning)
                                     {
-                                        <div>
 
-                                            <div class="d-flex justify-content-between mb-1">
+                                        <div class="small text-muted mb-1">
 
-                                                <small>
-                                                    @(item.StartTime?.ToString("dd MMM HH:mm"))
-                                                </small>
-
-                                                <small>
-                                                    @(item.EndTime?.ToString("dd MMM HH:mm"))
-                                                </small>
-
-                                            </div>
-
-                                            <div class="progress"
-                                                 style="height:8px;">
-
-                                                <div class="progress-bar bg-primary"
-                                                     style="width:@(item.ProgressPercent)%">
-                                                </div>
-
-                                            </div>
-
-                                            <small class="text-muted">
-                                                @item.ProgressPercent %
-                                            </small>
+                                            @(item.StartTime?.ToString("dd MMM HH:mm"))
+                                            -
+                                            @(item.EndTime?.ToString("dd MMM HH:mm"))
 
                                         </div>
+
+                                        <div class="progress rounded-pill"
+                                             style="height:10px">
+
+                                            <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+                                                 style="width:@(item.ProgressPercent)%">
+                                            </div>
+
+                                        </div>
+
+                                        <div class="small text-end fw-semibold mt-1">
+                                            @item.ProgressPercent %
+                                        </div>
+
                                     }
                                     else
                                     {
@@ -255,56 +256,35 @@
 
                                 </td>
                                 <td>
-
-                                    @switch (item.ActionType)
+                                    @if (item.IsRunning)
                                     {
-                                        case "SETUP_MODULE":
+                                        <a asp-action="MonitoringAging"
+                                           asp-route-deviceId="@item.id_device"
+                                           class="btn btn-outline-primary btn-sm">
 
-                                            <a asp-action="IoTDeviceData"
-                                               class="btn btn-dark btn-sm">
-                                                Setup Module
-                                            </a>
+                                            Monitor
 
-                                            break;
-
-                                        case "CHECK_MODULE":
-
-                                            <a asp-action="IoTDeviceData"
-                                               class="btn btn-warning btn-sm">
-                                                Check Module
-                                            </a>
-
-                                            break;
-
-                                        case "CHECK_DEVICE":
-
-                                            <button class="btn btn-secondary btn-sm">
-                                                Check Device
-                                            </button>
-
-                                            break;
-
-                                        case "MONITOR":
-
-                                            <a asp-action="MonitoringAging"
-                                               asp-route-deviceId="@item.id_device"
-                                               class="btn btn-primary btn-sm">
-                                                Monitor
-                                            </a>
-
-                                            break;
-
-                                        default:
-
-                                            <a asp-action="SetUpAging"
-                                               asp-route-deviceId="@item.id_device"
-                                               class="btn btn-success btn-sm">
-                                                Start Aging
-                                            </a>
-
-                                            break;
+                                        </a>
                                     }
+                                    else if (item.CanStartAging)
+                                    {
+                                        <a asp-action="SetUpAging"
+                                           asp-route-deviceId="@item.id_device"
+                                           class="btn btn-outline-success btn-sm">
 
+                                            Start Aging
+
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn btn-outline-secondary btn-sm"
+                                                disabled>
+
+                                            -
+
+                                        </button>
+                                    }
                                 </td>
                             </tr>
                         }

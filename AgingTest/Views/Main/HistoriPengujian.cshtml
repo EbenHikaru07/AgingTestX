@@ -157,12 +157,15 @@
                     Daftar Pengujian
                 </h6>
             </div>
+            @{
+                int no = 1;
+            }
             <div class="card-body">
                 <table id="tblProcess"
                        class="table table-bordered table-striped">
                     <thead>
                         <tr>
-                            <th>Process ID</th>
+                            <th>NO</th>
                             <th>Device</th>
                             <th>Start Time</th>
                             <th>End Time</th>
@@ -175,9 +178,7 @@
                         @foreach (var item in Model.Processes)
                         {
                             <tr>
-                                <td>
-                                    @item.IdProcess
-                                </td>
+                                <td>@no</td>
                                 <td>
                                     @item.DeviceName
                                 </td>
@@ -203,11 +204,14 @@
                                        asp-action="HistoriPengujian"
                                        asp-route-lampId="@Model.SelectedLampId"
                                        asp-route-processId="@item.IdProcess"
+                                       asp-fragment="detail-pengujian"
                                        class="btn btn-primary btn-sm">
                                         Detail
                                     </a>
                                 </td>
                             </tr>
+                            no++;
+
                         }
                     </tbody>
                 </table>
@@ -215,15 +219,15 @@
         </div>
     }
 
+    <section id="detail-pengujian">
     @if (Model.Logs != null && Model.Logs.Any())
     {
         var totalLog = Model.Logs.Count;
         var avgCurrent = Model.Logs.Average(x => x.Current);
-        var avgVoltage = Model.Logs.Average(x => x.Voltage);
         var abnormalCount = Model.Logs.Count(x => x.IsAbnormal);
 
         <div class="row mb-4">
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <div class="card stat-card shadow">
                     <div class="card-body text-center">
                         <h6>Total Log</h6>
@@ -232,7 +236,7 @@
                 </div>
             </div>
 
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <div class="card stat-card shadow">
                     <div class="card-body text-center">
                         <h6>Average Current</h6>
@@ -241,16 +245,7 @@
                 </div>
             </div>
 
-            <div class="col-md-3">
-                <div class="card stat-card shadow">
-                    <div class="card-body text-center">
-                        <h6>Average Voltage</h6>
-                        <h2>@avgVoltage.ToString("N2") V</h2>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <div class="card stat-card shadow">
                     <div class="card-body text-center">
                         <h6>Abnormal Event</h6>
@@ -270,24 +265,6 @@
                     <div class="card-body">
 
                         <div id="currentChart"
-                             style="height:500px;">
-                        </div>
-
-                    </div>
-
-                </div>
-            </div>
-
-            <div class="col-lg-12 mb-2">
-                <div class="card shadow mb-4">
-
-                    <div class="card-header bg-warning">
-                        Voltage Trend
-                    </div>
-
-                    <div class="card-body">
-
-                        <div id="voltageChart"
                              style="height:500px;">
                         </div>
 
@@ -315,7 +292,7 @@
                         <tr>
                             <th>Time</th>
                             <th>Current (A)</th>
-                            <th>Voltage (V)</th>
+                            @* <th>Voltage (V)</th> *@
                             <th>Status</th>
                         </tr>
 
@@ -335,9 +312,9 @@
                                     @log.Current
                                 </td>
 
-                                <td>
+                                @* <td>
                                     @log.Voltage
-                                </td>
+                                </td> *@
 
                                 <td>
 
@@ -367,7 +344,7 @@
 
         </div>
     }
-
+    </section>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
@@ -390,12 +367,6 @@
         @Html.Raw(string.Join(",",
                         Model.Logs.Select(x =>
                         x.Current.ToString(System.Globalization.CultureInfo.InvariantCulture))))
-    ];
-
-    const voltages = [
-        @Html.Raw(string.Join(",",
-                        Model.Logs.Select(x =>
-                        x.Voltage.ToString(System.Globalization.CultureInfo.InvariantCulture))))
     ];
 
     const abnormalColors = [
@@ -465,71 +436,10 @@
         ]
     });
 
-    // ===========================
-    // VOLTAGE CHART
-    // ===========================
-
-    const voltageChart =
-        echarts.init(
-            document.getElementById('voltageChart'));
-
-    voltageChart.setOption({
-
-        animation: false,
-
-        tooltip: {
-            trigger: 'axis'
-        },
-
-        toolbox: {
-            show: true,
-            feature: {
-                saveAsImage: {
-                    title: 'Download PNG'
-                },
-                restore: {},
-                dataZoom: {}
-            }
-        },
-
-        dataZoom: [
-            {
-                type: 'inside'
-            },
-            {
-                type: 'slider',
-                height: 20
-            }
-        ],
-
-        xAxis: {
-            type: 'category',
-            boundaryGap: false,
-            data: labels
-        },
-
-        yAxis: {
-            type: 'value',
-            name: 'Volt'
-        },
-
-        series: [
-            {
-                name: 'Voltage',
-                type: 'line',
-                smooth: true,
-                showSymbol: false,
-                sampling: 'lttb',
-                areaStyle: {},
-                data: voltages
-            }
-        ]
-    });
-
     window.addEventListener('resize', function () {
 
         currentChart.resize();
-        voltageChart.resize();
+        @* voltageChart.resize(); *@
 
     });
 

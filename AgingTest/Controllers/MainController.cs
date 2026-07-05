@@ -8,10 +8,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 
 namespace AgingTest.Controllers
 {
-
+    [Authorize]
     public class MainController : Controller
     {
         private readonly INotificationService _notificationService;
@@ -34,6 +35,7 @@ namespace AgingTest.Controllers
             public int Stopped { get; set; }
             public int Error { get; set; }
         }
+
         public IActionResult Index()
         {
             return View();
@@ -46,20 +48,21 @@ namespace AgingTest.Controllers
         {
             return View();
         }
+        [Authorize(Roles = "admin,engineer")]
         public IActionResult IoTDevice()
         {
             return View();
         }
 
-        public async Task<IActionResult> TesNotification()
-        {
-            await _notificationService.SendToAllAsync(
-                "Test Notifikasi",
-                "Ini adalah notifikasi realtime untuk testing 🚀"
-            );
+        //public async Task<IActionResult> TesNotification()
+        //{
+        //    await _notificationService.SendToAllAsync(
+        //        "Test Notifikasi",
+        //        "Ini adalah notifikasi realtime untuk testing 🚀"
+        //    );
 
-            return RedirectToAction("Dashboard");
-        }
+        //    return RedirectToAction("Dashboard");
+        //}
 
         //public async Task<IActionResult> DataLampuAging()
         //{
@@ -69,6 +72,8 @@ namespace AgingTest.Controllers
 
         //    return View(data);
         //}
+
+        [Authorize(Roles = "admin,engineer")]
         public async Task<IActionResult> IoTDeviceData()
         {
             var devices = await _context.IoTModules
@@ -81,6 +86,7 @@ namespace AgingTest.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "admin,engineer")]
         public async Task<IActionResult> IoTDeviceEntry(IoTModuleModel model)
         {
             if (!ModelState.IsValid)
@@ -96,6 +102,7 @@ namespace AgingTest.Controllers
         }
 
         // INI Entry Lampu
+        [Authorize(Roles = "admin,engineer")]
         public async Task<IActionResult> EntryDataLampu()
         {
             var data = await _context.DataLampu.OrderByDescending(x => x.created_at).ToListAsync();
@@ -103,6 +110,7 @@ namespace AgingTest.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "admin,engineer")]
         public async Task<IActionResult> CreateLampu(DataLampu model)
         {
             if (!ModelState.IsValid) return RedirectToAction(nameof(EntryDataLampu));
@@ -118,6 +126,7 @@ namespace AgingTest.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "admin,engineer")]
         public async Task<IActionResult> EditLampu(DataLampu model)
         {
             var data = await _context.DataLampu.FindAsync(model.id_lamp);
@@ -135,6 +144,7 @@ namespace AgingTest.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "admin,engineer")]
         public async Task<IActionResult> DeleteLampu(int id)
         {
             var data = await _context.DataLampu.FindAsync(id);
@@ -150,6 +160,7 @@ namespace AgingTest.Controllers
         // CREATE
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "admin,engineer")]
         public async Task<IActionResult> CreateLampuAging(DataLampu model)
         {
             try
@@ -188,6 +199,7 @@ namespace AgingTest.Controllers
         // EDIT
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "admin,engineer")]
         public async Task<IActionResult> EditLampuAging(DataLampu model)
         {
             try
@@ -238,6 +250,7 @@ namespace AgingTest.Controllers
         // DELETE
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "admin,engineer")]
         public async Task<IActionResult> DeleteLampuAging(int id)
         {
             try
@@ -278,6 +291,7 @@ namespace AgingTest.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "admin,engineer")]
         public async Task<IActionResult> GetParameter(int id)
         {
             var param = await _context.TestConfiguration
@@ -298,6 +312,7 @@ namespace AgingTest.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "admin,engineer")]
         public async Task<IActionResult> SaveParameterUji(
      [FromBody] TestConfigurationModel model)
         {
@@ -354,6 +369,7 @@ namespace AgingTest.Controllers
         }
 
         // D E V I C E  ----  A G I N G
+        [Authorize(Roles = "admin,engineer")]
         public IActionResult DeviceAging()
         {
             var devices = _context.AgingDevices
@@ -366,9 +382,12 @@ namespace AgingTest.Controllers
                 .Select(x => x.id_module)
                 .ToList();
 
-            ViewBag.IoTList = _context.IoTModules
-                .Where(x => !usedModuleIds.Contains(x.id_module))
-                .ToList();
+            ViewBag.IoTList = _context.IoTModules.ToList();
+
+            ViewBag.AvailableModules = _context.IoTModules
+    .Where(x => !usedModuleIds.Contains(x.id_module))
+    .ToList();
+
             ViewBag.UsedModules = usedModuleIds;
 
             return View(devices);
@@ -377,6 +396,7 @@ namespace AgingTest.Controllers
         // CREATE DeviceAging
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "admin,engineer")]
         public async Task<IActionResult> CreateDeviceAging(AgingDeviceModel model)
         {
             try
@@ -397,13 +417,16 @@ namespace AgingTest.Controllers
                     return RedirectToAction(nameof(DeviceAging));
                 }
 
-                bool moduleUsed = await _context.AgingDevices
-    .AnyAsync(x => x.id_module == model.id_module);
-
-                if (moduleUsed)
+                if (model.id_module != null)
                 {
-                    TempData["Error"] = "IoT Module sudah digunakan device lain.";
-                    return RedirectToAction(nameof(DeviceAging));
+                    bool moduleUsed = await _context.AgingDevices
+                        .AnyAsync(x => x.id_module == model.id_module);
+
+                    if (moduleUsed)
+                    {
+                        TempData["Error"] = "IoT Module sudah digunakan device lain.";
+                        return RedirectToAction(nameof(DeviceAging));
+                    }
                 }
 
                 model.created_at = DateTime.Now;
@@ -426,6 +449,7 @@ namespace AgingTest.Controllers
         // EDIT DeviceAging
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "admin,engineer")]
         public async Task<IActionResult> EditDeviceAging(AgingDeviceModel model)
         {
             try
@@ -449,19 +473,8 @@ namespace AgingTest.Controllers
                     return RedirectToAction(nameof(DeviceAging));
                 }
 
-                bool moduleUsed = await _context.AgingDevices
-    .AnyAsync(x => x.id_module == model.id_module
-                && x.id_device != model.id_device);
-
-                if (moduleUsed)
-                {
-                    TempData["Error"] = "IoT Module sudah digunakan device lain.";
-                    return RedirectToAction(nameof(DeviceAging));
-                }
-
                 device.device_name = model.device_name;
                 device.device_code = model.device_code;
-                device.id_module = model.id_module;
                 device.max_current = model.max_current;
                 device.max_voltage = model.max_voltage;
                 device.device_status = model.device_status;
@@ -473,6 +486,9 @@ namespace AgingTest.Controllers
                     device.is_downtime = true;
                     device.downtime_start = DateTime.Now;
                     device.downtime_end = null;
+
+                    device.device_status = false;
+                    device.id_module = null;
                 }
 
                 // END DOWNTIME
@@ -480,6 +496,30 @@ namespace AgingTest.Controllers
                 {
                     device.is_downtime = false;
                     device.downtime_end = DateTime.Now;
+
+                    device.device_status = true;
+
+                    device.id_module = model.id_module;
+                }
+
+                // NORMAL UPDATE
+                else if (model.is_downtime != true)
+                {
+                    if (model.id_module != null)
+                    {
+                        bool moduleUsed = await _context.AgingDevices
+                            .AnyAsync(x => x.id_module == model.id_module
+                                        && x.id_device != model.id_device);
+
+                        if (moduleUsed)
+                        {
+                            TempData["Error"] =
+                                "IoT Module sudah digunakan device lain.";
+                            return RedirectToAction(nameof(DeviceAging));
+                        }
+                    }
+
+                    device.id_module = model.id_module;
                 }
 
                 device.updated_at = DateTime.Now;
@@ -497,6 +537,7 @@ namespace AgingTest.Controllers
         }
 
         // DELETE DeviceAging
+        [Authorize(Roles = "admin,engineer")]
         public async Task<IActionResult> DeleteDeviceAging(int id)
         {
             try
@@ -524,6 +565,31 @@ namespace AgingTest.Controllers
             return RedirectToAction(nameof(DeviceAging));
         }
 
+        [HttpGet]
+        [Authorize(Roles = "admin,engineer")]
+        public async Task<IActionResult> GetDeviceDetail(int id)
+        {
+            var data = await _context.AgingDevices
+                .Where(x => x.id_device == id)
+                .Select(x => new
+                {
+                    x.device_name,
+                    x.device_code,
+                    x.max_current,
+                    x.device_status,
+                    x.downtime_start,
+                    x.downtime_end
+                })
+                .FirstOrDefaultAsync();
+
+            if (data == null)
+                return NotFound();
+
+            return Json(data);
+        }
+
+        //Dashboard
+        [Authorize(Roles = "admin,engineer, operator")]
         public IActionResult Dashboard()
         {
             var now = DateTime.Now;
@@ -562,18 +628,49 @@ namespace AgingTest.Controllers
                     .FirstOrDefault();
 
                 bool hasModule = d.id_module != null;
-
                 bool deviceActive = d.device_status;
+                bool moduleOnline = hasModule && GetRealtimeStatus(d.IoTModules?.last_heartbeat) == "ONLINE";
+                bool isDowntime = d.is_downtime == true;
 
-                bool moduleOnline =
-                    hasModule &&
-                    GetRealtimeStatus(d.IoTModules?.last_heartbeat) == "ONLINE";
+                string deviceIndicator;
+                string deviceAction;
 
-                bool isDowntime =
-                    d.is_downtime == true;
+                if (isDowntime)
+                {
+                    deviceIndicator = "DOWNTIME";
+                    deviceAction = "CHECK_DEVICE";
+                }
+                else if (!deviceActive)
+                {
+                    deviceIndicator = "OFFLINE";
+                    deviceAction = "CHECK_DEVICE";
+                }
+                else
+                {
+                    deviceIndicator = "NORMAL";
+                    deviceAction = "";
+                }
+
+                string moduleIndicator;
+                string moduleAction;
+
+                if (!hasModule)
+                {
+                    moduleIndicator = "NO MODULE";
+                    moduleAction = "CHECK_MODULE";
+                }
+                else if (!moduleOnline)
+                {
+                    moduleIndicator = "OFFLINE";
+                    moduleAction = "CHECK_MODULE";
+                }
+                else
+                {
+                    moduleIndicator = "ONLINE";
+                    moduleAction = "";
+                }
 
                 bool isRunning = process?.process_status == 1;
-
                 bool processFinished = process?.process_status == 2;
 
                 // hitung progress
@@ -583,13 +680,9 @@ namespace AgingTest.Controllers
                     process.start_time != null &&
                     process.end_time != null)
                 {
-                    var totalDuration =
-                        (process.end_time.Value -
-                         process.start_time.Value).TotalMinutes;
+                    var totalDuration = (process.end_time.Value - process.start_time.Value).TotalMinutes;
 
-                    var elapsed =
-                        (DateTime.Now -
-                         process.start_time.Value).TotalMinutes;
+                    var elapsed = (DateTime.Now - process.start_time.Value).TotalMinutes;
 
                     if (totalDuration > 0)
                     {
@@ -607,24 +700,23 @@ namespace AgingTest.Controllers
                         progress = 100;
                     }
                 }
-
                 string operationalStatus;
 
-                if (!deviceActive)
+                if (isDowntime)
                 {
-                    operationalStatus = "DISABLED";
+                    operationalStatus = "DOWNTIME";
+                }
+                else if (!deviceActive)
+                {
+                    operationalStatus = "DEVICE OFF";
                 }
                 else if (!hasModule)
                 {
                     operationalStatus = "NO MODULE";
                 }
-                else if (isDowntime)
-                {
-                    operationalStatus = "DOWNTIME";
-                }
                 else if (!moduleOnline)
                 {
-                    operationalStatus = "OFFLINE";
+                    operationalStatus = "MODULE OFF";
                 }
                 else if (isRunning)
                 {
@@ -632,12 +724,13 @@ namespace AgingTest.Controllers
                 }
                 else if (processFinished)
                 {
-                    operationalStatus = "FINISHED";
+                    operationalStatus = "READY";
                 }
                 else
                 {
                     operationalStatus = "READY";
                 }
+
                 string moduleStatus;
 
                 if (!hasModule)
@@ -691,6 +784,12 @@ namespace AgingTest.Controllers
                 //    !isDowntime &&
                 //    !isRunning;
 
+                bool canStartAging =
+    deviceActive &&
+    hasModule &&
+    moduleOnline &&
+    !isDowntime &&
+    !isRunning;
                 return new DashboardViewModel
                 {
                     id_device = d.id_device,
@@ -710,7 +809,7 @@ namespace AgingTest.Controllers
 
                     IsRunning = isRunning,
 
-                    //CanStart = canStart,
+                    CanStartAging = canStartAging,
 
                     OperationalStatus = operationalStatus,
 
@@ -718,6 +817,11 @@ namespace AgingTest.Controllers
                     ActionType = actionType,
                     ProgressPercent = progress,
                     LastFinishedTime = lastFinishedProcess?.end_time,
+                    DeviceIndicator = deviceIndicator,
+                    DeviceAction = deviceAction,
+
+                    ModuleIndicator = moduleIndicator,
+                    ModuleAction = moduleAction,
 
                     LastHeartbeat = d.IoTModules?.last_heartbeat
                 };
@@ -727,6 +831,7 @@ namespace AgingTest.Controllers
             return View(dashboard);
         }
 
+        [Authorize(Roles = "admin,engineer")]
         private string GetRealtimeStatus(DateTime? heartbeat)
         {
             if (heartbeat == null)
@@ -734,12 +839,13 @@ namespace AgingTest.Controllers
 
             var diff = (DateTime.Now - heartbeat.Value).TotalSeconds;
 
-            if (diff <= 120)
+            if (diff <= 7200)
                 return "ONLINE";
 
             return "OFFLINE";
         }
 
+        [Authorize(Roles = "admin,engineer,operator")]
         public IActionResult SetUpAging(int deviceId)
         {
             var device = _context.AgingDevices
@@ -852,6 +958,7 @@ namespace AgingTest.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "admin,engineer, operator")]
         public async Task<IActionResult> StartAging(AgingSetupViewModel model)
         {
             try
@@ -1002,6 +1109,7 @@ namespace AgingTest.Controllers
             }
         }
 
+        [Authorize(Roles = "admin,engineer,operator")]
         public IActionResult MonitoringAging(int deviceId)
         {
             var now = DateTime.Now;
@@ -1091,6 +1199,7 @@ namespace AgingTest.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "admin,engineer,operator")]
         public IActionResult GetRealtimeLog(int prosesId)
         {
             var data = (
@@ -1123,6 +1232,7 @@ namespace AgingTest.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "admin,engineer,operator")]
         public IActionResult GetChartLogs(int prosesId)
         {
             var logs = _context.AgingLog
@@ -1140,6 +1250,7 @@ namespace AgingTest.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "admin,engineer,operator")]
         public IActionResult GetMonitoringData(int prosesId)
         {
             var data = _context.AgingProcess
@@ -1158,6 +1269,7 @@ namespace AgingTest.Controllers
         }
 
         // NOTIFICATION =====================================
+        [Authorize(Roles = "admin,engineer,operator")]
         public IActionResult NotificationIndex()
         {
             int userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
@@ -1171,6 +1283,7 @@ namespace AgingTest.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "admin,engineer,operator")]
         public IActionResult NotificationMarkAsRead(int id)
         {
             int userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
@@ -1187,6 +1300,7 @@ namespace AgingTest.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "admin,engineer,operator")]
         public IActionResult NotificationMarkAllAsRead()
         {
             int userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
@@ -1202,6 +1316,7 @@ namespace AgingTest.Controllers
             return RedirectToAction(nameof(NotificationIndex));
         }
 
+        [Authorize(Roles = "admin,engineer,operator")]
         public async Task<IActionResult> HistoriPengujian(
     int? lampId,
     int? processId)

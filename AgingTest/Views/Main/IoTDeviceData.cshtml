@@ -41,20 +41,19 @@
     <div class="card border-2 shadow-sm rounded-0">
         <div class="card-body">
             <div class="table-responsive">
-
                 @if (Model != null && Model.Any())
                 {
                     <table id="iotTable" class="table align-middle table-hover w-100">
-
                         <thead class="table-light">
                             <tr>
                                 <th>No</th>
                                 <th>Module Name</th>
                                 <th>MAC Address</th>
                                 <th>Device Name</th>
-                                <th>Status Module</th>
+                                <th>Module Condition</th>
                                 <th>Last Heartbeat</th>
-                                <th width="140">Action</th>
+                                <th>Status Module</th>
+                                @* <th width="140">Action</th> *@
                             </tr>
                         </thead>
 
@@ -67,8 +66,7 @@
                             @foreach (var item in Model)
                             {
                                 var isOnline =
-                                item.last_heartbeat != null &&
-                                (DateTime.Now - item.last_heartbeat.Value).TotalSeconds < 30;
+                                item.last_heartbeat != null && (DateTime.Now - item.last_heartbeat.Value).TotalSeconds < 7200;
 
                                 <tr>
 
@@ -85,9 +83,27 @@
                                     </td>
 
                                     <td>
-                                        @(item.AgingDevices?.FirstOrDefault()?.device_name ?? "Not Used")
+                                        @(item.AgingDevices?.FirstOrDefault()?.device_name ?? "-")
                                     </td>
+                                    <td>
 
+                                        @if (@item.module_status == true)
+                                        {
+                                            <span class="badge bg-success">
+                                                Active
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">
+                                                Disabled
+                                            </span>
+                                        }
+
+                                    </td>
+                                    <td>
+                                        @(item.last_heartbeat?.ToString("dd MMM yyyy HH:mm:ss") ?? "-")
+                                    </td>
                                     <td>
 
                                         @if (isOnline)
@@ -104,12 +120,7 @@
                                         }
 
                                     </td>
-
-                                    <td>
-                                        @(item.last_heartbeat?.ToString("dd MMM yyyy HH:mm:ss") ?? "-")
-                                    </td>
-
-                                    <td>
+                                    @* <td>
 
                                         <div class="d-flex gap-2">
 
@@ -120,18 +131,12 @@
                                             <button class="btn btn-danger btn-sm">
                                                 <i class="fa-solid fa-trash"></i>
                                             </button>
-
                                         </div>
-
-                                    </td>
-
+                                    </td> *@
                                 </tr>
-
                                 no++;
                             }
-
                         </tbody>
-
                     </table>
                 }
                 else
@@ -196,35 +201,23 @@
 @section Scripts {
     <script>
               $(document).ready(function () {
-
             if ($('#iotTable').length) {
-
                 $('#iotTable').DataTable({
-
                     responsive: true,
                     autoWidth: false,
-
                     pageLength: 10,
-
                     lengthMenu: [
                         [10, 25, 50, 100],
                         [10, 25, 50, 100]
                     ],
 
                     language: {
-
                         search: "",
-
                         searchPlaceholder: "Search module...",
-
                         lengthMenu: "Show _MENU_ entries",
-
                         info: "Showing _START_ to _END_ of _TOTAL_ modules",
-
                         emptyTable: "No module data available",
-
                         zeroRecords: "No matching module found",
-
                         paginate: {
                             previous: "<",
                             next: ">"
