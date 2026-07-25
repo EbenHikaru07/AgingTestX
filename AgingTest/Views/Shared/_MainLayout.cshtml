@@ -4,9 +4,9 @@
 
 @{
     var nama = User.Identity.IsAuthenticated ? User.Identity.Name : "";
-    var role = User.FindFirst(ClaimTypes.Role)?.Value;
 
     var departemen = User.FindFirst("role")?.Value;
+    var role = User.FindFirst(ClaimTypes.Role)?.Value ?? "Guest";
     var title = ViewData["Title"] ?? "Aging X";
     var serverTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
 
@@ -441,7 +441,7 @@
 
                             <li class="px-3 py-2">
                                 <div class="fw-semibold">@User.FindFirst("Badge")?.Value</div>
-                                <small class="text-info">@departemen</small>
+                                <small class="text-info text-uppercase">@role</small>
                             </li>
                             <li class="px-3 py-2 d-lg-none">
                                 <div class="small text-muted">Local Time</div>
@@ -456,11 +456,11 @@
                             </li>
                             <li><hr class="dropdown-divider" style="border-color:rgba(0,0,0,0.1)" /></li>
 
-                            <li>
+                          @*   <li>
                                 <a class="dropdown-item" href="#">
                                     <i class="fas fa-id-badge me-2"></i> Profile
                                 </a>
-                            </li>
+                            </li> *@
 
                             <li>
                                 <a class="dropdown-item text-danger"

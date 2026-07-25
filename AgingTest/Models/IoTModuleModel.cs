@@ -29,8 +29,6 @@ namespace AgingTest.Models
 
         public DateTime created_at { get; set; } = DateTime.Now;
         public DateTime? updated_at { get; set; }
-        public string? field1 { get; set; }
-        public int? field2 { get; set; }
 
         public virtual ICollection<AgingDeviceModel>? AgingDevices { get; set; }
     }

@@ -8,6 +8,7 @@
     Layout = "~/Views/Shared/_MainLayout.cshtml";
     ViewData["Title"] = "Dashboard";
 
+    bool isOperator = User.IsInRole("operator");
     var total = Model.Count;
     var online = Model.Count(x => x.OperationalStatus == "READY");
     var running = Model.Count(x => x.OperationalStatus == "RUNNING");
@@ -157,46 +158,67 @@
 
                                     else if (item.OperationalStatus == "MODULE OFF")
                                     {
-                                        <a asp-action="IoTDeviceData"
-                                           asp-route-deviceId="@item.id_device"
-                                           class="btn btn-warning btn-sm rounded-0">
-
-                                            MODULE OFF
-
-                                        </a>
+                                        if (isOperator)
+                                        {
+                                            <span class="btn btn-danger btn-sm rounded-0 disabled">
+                                                MODULE OFF
+                                            </span>
+                                        } else
+                                        {
+                                             <a asp-action="IoTDeviceData" asp-route-deviceId="@item.id_device" class="btn btn-warning btn-sm rounded-0">
+                                              MODULE OFF
+                                              </a>
+                                        }
                                     }
 
                                     else if (item.OperationalStatus == "DEVICE OFF")
                                     {
-                                        <a asp-action="DeviceAging"
-                                           asp-route-deviceId="@item.id_device"
-                                           class="btn btn-secondary btn-sm rounded-0">
-
-                                            DEVICE OFF
-
-                                        </a>
+                                        if (isOperator)
+                                        {
+                                            <span class="btn btn-danger btn-sm rounded-0 disabled">
+                                                DEVICE OFF
+                                            </span>
+                                        } else
+                                        {
+                                             <a asp-action="DeviceAging" asp-route-deviceId="@item.id_device" class="btn btn-secondary btn-sm rounded-0">
+                                              DEVICE OFF
+                                              </a>
+                                        }
                                     }
 
                                     else if (item.OperationalStatus == "DOWNTIME")
                                     {
-                                        <a asp-action="DeviceAging"
-                                           asp-route-deviceId="@item.id_device"
-                                           class="btn btn-danger btn-sm rounded-0">
-
-                                            DOWNTIME
-
-                                        </a>
+                                        if (isOperator)
+                                        {
+                                            <span class="btn btn-danger btn-sm rounded-0 disabled">
+                                                DOWNTIME
+                                            </span>
+                                        } else
+                                        {
+                                             <a asp-action="DeviceAging" asp-route-deviceId="@item.id_device" class="btn btn-danger btn-sm rounded-0">
+                                              DOWNTIME
+                                              </a>
+                                        }
                                     }
 
                                     else if (item.OperationalStatus == "NO MODULE")
                                     {
-                                        <a asp-action="DeviceAging"
+                                        if (isOperator)
+                                        {
+                                            <span class="btn btn-danger btn-sm rounded-0 disabled">
+                                                NO MODULE
+                                            </span>
+                                        } else
+                                        {
+                                             <a asp-action="DeviceAging"
                                            asp-route-deviceId="@item.id_device"
-                                           class="btn btn-dark btn-sm rounded-0">
+                                           class="btn btn-warning btn-sm rounded-0">
 
                                             NO MODULE
 
                                         </a>
+                                        }
+                                        
                                     }
 
                                 </td>
@@ -276,11 +298,8 @@
                                     }
                                     else
                                     {
-                                        <button class="btn btn-outline-secondary btn-sm"
-                                                disabled>
-
+                                        <button class="btn btn-outline-secondary btn-sm" disabled>
                                             -
-
                                         </button>
                                     }
                                 </td>

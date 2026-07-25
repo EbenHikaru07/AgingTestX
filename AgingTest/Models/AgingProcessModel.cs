@@ -19,12 +19,10 @@ namespace AgingTest.Models
         public DateTime? end_time { get; set; }
 
         public int process_status { get; set; }
+        public int? test_number { get; set; }
 
         public string? remarks { get; set; }
         public DateTime created_at { get; set; } = DateTime.Now;
-        public string? field1 { get; set; }
-
-        public int? field2 { get; set; }
 
         // 🔥 Navigation
         [ForeignKey("id_device")]

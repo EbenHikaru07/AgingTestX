@@ -292,7 +292,6 @@
                         <tr>
                             <th>Time</th>
                             <th>Current (A)</th>
-                            @* <th>Voltage (V)</th> *@
                             <th>Status</th>
                         </tr>
 
@@ -311,10 +310,6 @@
                                 <td>
                                     @log.Current
                                 </td>
-
-                                @* <td>
-                                    @log.Voltage
-                                </td> *@
 
                                 <td>
 
@@ -439,7 +434,6 @@
     window.addEventListener('resize', function () {
 
         currentChart.resize();
-        @* voltageChart.resize(); *@
 
     });
 

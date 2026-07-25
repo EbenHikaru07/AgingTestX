@@ -35,15 +35,6 @@ namespace AgingTest.Models
 
         public DateTime created_at { get; set; } = DateTime.Now;
 
-        public string? field1 { get; set; }
-
-        public int? field2 { get; set; }
-
-        public DateTime? field3 { get; set; }
-
-        public decimal? field4 { get; set; }
-
-        public decimal? field5 { get; set; }
         // 🔥 Navigation
         [ForeignKey("id_lamp")]
         public virtual DataLampu? Lampu { get; set; }

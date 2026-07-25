@@ -23,12 +23,6 @@ namespace AgingTest.Models
         public bool is_abnormal { get; set; } = false;
 
         public string? remarks { get; set; }
-        public string? field1 { get; set; }
-
-        public int? field2 { get; set; }
-
-        public decimal? field3 { get; set; }
-        public decimal? field4 { get; set; }
 
         // 🔥 Navigation
         [ForeignKey("id_process")]

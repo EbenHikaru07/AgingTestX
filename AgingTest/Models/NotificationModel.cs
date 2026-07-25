@@ -24,9 +24,6 @@ namespace AgingTest.Models
 
         public DateTime created_at { get; set; } = DateTime.Now;
 
-        public string? field1 { get; set; }
-
-        public int? field2 { get; set; }
         // Navigation property (jika kamu punya model User)
         [ForeignKey("id_user")]
         public virtual UserModel? User { get; set; }

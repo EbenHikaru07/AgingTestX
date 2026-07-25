@@ -74,8 +74,7 @@
             box-shadow: 0 10px 30px rgba(0,0,0,.08);
         }
 
-    #chartCurrent,
-    #chartVoltage {
+    #chartCurrent {
         border-radius: 10px;
     }
 
@@ -106,7 +105,7 @@
         font-weight: 600;
     }
 
-    #currentText, #voltageText {
+    #currentText {
         letter-spacing: 1px;
     }
 </style>
@@ -244,7 +243,6 @@
             </div>
         </div>
 
-        <!-- 🔥 VOLTAGE -->
         <div class="col-lg-3">
             <div class="card p-4 shadow-sm h-75">
 
@@ -268,29 +266,18 @@
     </div>
 
     <!-- 🔥 CHART -->
-    <div class="row mt-4">
+    <div class="row">
         <div class="col-lg-12">
             <div class="card p-4 shadow-sm">
 
                 <!-- 🔥 HEADER + TOOLS -->
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5>📈 Current Chart</h5>
+                    <h5>Current Chart</h5>
                 </div>
                 <div id="chartCurrent" style="width:100%; height:420px;"></div>
             </div>
         </div>
 
-        <div class="col-lg-12 mt-4">
-            <div class="card p-4 shadow-sm d-none">
-
-                <div class="d-none justify-content-between align-items-center mb-3">
-                    <h5>Voltage Chart</h5>
-
-                </div>
-
-                <div id="chartVoltage" style="width:100%; height:420px;"></div>
-            </div>
-        </div>
     </div>
 </div>
 
@@ -298,7 +285,7 @@
     // CONFIG
     const UPDATE_INTERVAL = 5000;
     const TIMER_INTERVAL = 1000;
-    const MAX_CHART_DATA = 200;
+    const MAX_CHART_DATA = 9999999;
 
     // TIME
     let startTimeRaw = "@Model.StartTime?.ToString("yyyy-MM-ddTHH:mm:ss")";
@@ -311,18 +298,17 @@
     const chartCurrent = echarts.init(
         document.getElementById('chartCurrent')
     );
-
-    const chartVoltage = echarts.init(
-        document.getElementById('chartVoltage')
-    );
+    
 
     const currentMin = @(Model.CurrentMin?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "0");
     const currentMax = @(Model.CurrentMax?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "1");
-    const voltageMin = @(Model.VoltageMin?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "0");
-    const voltageMax = @(Model.VoltageMax?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "1");
 
     let lastCurrentLogTime = null;
-    let lastVoltageLogTime = null;
+
+        let currentChartData = [];
+
+
+    const CHART_WINDOW = 100;
 
     // CHART OPTION
     function smartFormatter(value) {
@@ -351,6 +337,9 @@
             },
             xAxis: {
                 type: 'time',
+                 min:startTime,
+
+                max:endTime,
                 boundaryGap: false,
 
                 axisLabel: {
@@ -363,26 +352,36 @@
                     }
                 }
             },
-            yAxis: {
-                type: 'value',
-                scale: true,
+               yAxis:{
+        type:'value',
 
-                axisLabel: {
-                    color: '#999'
-                },
-                splitLine: {
-                    lineStyle: {
-                        type: 'dashed'
-                    }
-                }
-            },
+        min:function(){
+
+            return Math.max(
+                0,
+                currentMin-0.2
+            );
+        },
+
+        max:function(){
+
+            return currentMax+0.5;
+        },
+
+        interval:0.1,
+
+        scale:false
+    },
             dataZoom: [
                 {
-                    type: 'inside'
+                    type: 'inside',
+                    realtime:true
                 },
                 {
                     type: 'slider',
-                    height: 18
+                    realtime:true,
+        bottom:0,
+        height:20
                 }
             ],
             series: [
@@ -399,23 +398,60 @@
                         opacity: 0.08
                     },
                     data: [],
-                    markLine: {
-                        silent: true,
-                        symbol: 'none',
-                        lineStyle: {
-                            type: 'dashed'
-                        },
-                        data: [
-                            {
-                                yAxis: maxVal,
-                                name: 'MAX'
-                            },
-                            {
-                                yAxis: minVal,
-                                name: 'MIN'
-                            }
-                        ]
-                    }
+                            markLine:{
+        silent:true,
+        symbol:'none',
+
+        label:{
+            show:true,
+            position:'end',
+            color:'red',
+            fontWeight:'bold'
+        },
+
+        lineStyle:{
+            color:'red',
+            width:2,
+            type:'solid'
+        },
+
+            data:[
+        {
+            yAxis:minVal,
+            name:'MIN '+minVal+' A'
+        },
+        {
+            yAxis:maxVal,
+            name:'MAX '+maxVal+' A'
+        }
+    ]
+    },
+        markArea:{
+        silent:true,
+
+        itemStyle:{
+            color:'rgba(255,0,0,0.08)'
+        },
+
+        data:[
+            [
+                {
+                    yAxis:0
+                },
+                {
+                    yAxis:minVal
+                }
+            ],
+            [
+                {
+                    yAxis:maxVal
+                },
+                {
+                    yAxis:maxVal*3
+                }
+            ]
+        ]
+    }
                 }
             ]
         };
@@ -423,10 +459,6 @@
 
     chartCurrent.setOption(
         createOption('Current (A)', currentMin, currentMax)
-    );
-
-    chartVoltage.setOption(
-        createOption('Voltage (V)', voltageMin, voltageMax)
     );
 
     // UTIL
@@ -496,20 +528,39 @@
     }
 
     // SENSOR BAR
-    function updateBar(idBar, idText, value, max, unit) {
+        function updateBar(
+        idBar,
+        idText,
+        value,
+        max,
+        unit)
+    {
 
-        value = Number(value ?? 0);
-        max = Number(max ?? 1);
-        const percent = (value / max) * 100;
-        const safePercent = Math.min(percent, 100);
-        const bar = document.getElementById(idBar);
-        const textEl = document.getElementById(idText);
-        // width
-        bar.style.width = safePercent + "%";
-        // text
-        textEl.innerText = value.toFixed(2) + " " + unit;
-        // reset class
-        bar.className = "progress-bar";
+        const bar =
+            document.getElementById(idBar);
+
+        const textEl =
+            document.getElementById(idText);
+
+        if(!bar || !textEl)
+            return;
+
+        value=Number(value??0);
+        max=Number(max??1);
+
+        const percent=
+            (value/max)*100;
+
+        const safe=
+            Math.min(percent,100);
+
+        bar.style.width=safe+"%";
+
+        textEl.innerText=
+            value.toFixed(2)+
+            " "+unit;
+
+        bar.className="progress-bar";
 
         textEl.classList.remove(
             "text-success",
@@ -517,57 +568,63 @@
             "text-danger"
         );
 
-        // color logic
-        if (percent > 100) {
+        if(percent>100){
             bar.classList.add("bg-danger");
             textEl.classList.add("text-danger");
         }
-        else if (percent > 80) {
+        else if(percent>80){
             bar.classList.add("bg-warning");
             textEl.classList.add("text-warning");
         }
-        else {
+        else{
             bar.classList.add("bg-success");
             textEl.classList.add("text-success");
         }
     }
 
     // PUSH CHART DATA
-    function pushData(chart, value, logTime, type) {
+         function pushData(value, logTime){
 
-        if (!logTime)
+        if(!logTime)
             return;
-        const ts = new Date(logTime).getTime();
 
-        // prevent duplicate
-        if (type === "current") {
-            if (lastCurrentLogTime === ts)
-                return;
-            lastCurrentLogTime = ts;
+        const ts=new Date(logTime);
+
+        const last=
+            currentChartData[
+                currentChartData.length-1
+            ];
+
+        if(
+            last &&
+            last[0].getTime()===ts.getTime()
+        ){
+            currentChartData[
+                currentChartData.length-1
+            ][1]=Number(value);
         }
-        if (type === "voltage") {
-            if (lastVoltageLogTime === ts)
-                return;
-            lastVoltageLogTime = ts;
-        }
+        else{
 
-        const option = chart.getOption();
-        const data = option.series[0].data || [];
-
-        data.push([
-            new Date(logTime),
-            value
-        ]);
-
-        // limit data
-        if (data.length > MAX_CHART_DATA) {
-            data.shift();
+            currentChartData.push([
+                ts,
+                Number(value)
+            ]);
         }
 
-        chart.setOption({
-            series: [{
-                data: data
-            }]
+        while(
+            currentChartData.length>
+            MAX_CHART_DATA
+        ){
+            currentChartData.shift();
+        }
+
+        chartCurrent.setOption({
+
+            series:[
+                {
+                    data:currentChartData
+                }
+            ]
         });
     }
 
@@ -581,38 +638,26 @@
             const logs = await res.json();
             if (!logs || logs.length === 0)
                 return;
-            const currentData = [];
-            const voltageData = [];
+               const currentData = [];
 
-            logs.forEach(x => {
+    logs.forEach(x=>{
 
-                if (x.current != null) {
+        if(x.current!=null){
 
-                    currentData.push([
-                        new Date(x.log_time),
-                        x.current
-                    ]);
-                }
+            currentData.push([
+                new Date(x.log_time),
+                Number(x.current)
+            ]);
+        }
+    });
 
-                if (x.voltage != null) {
+                currentChartData = currentData;
 
-                    voltageData.push([
-                        new Date(x.log_time),
-                        x.voltage
-                    ]);
-                }
-            });
-
-            chartCurrent.setOption({
-                series: [{
-                    data: currentData
-                }]
-            });
-            chartVoltage.setOption({
-                series: [{
-                    data: voltageData
-                }]
-            });
+    chartCurrent.setOption({
+        series:[{
+            data:currentChartData
+        }]
+    });
 
             // save last timestamp
             const lastLog =
@@ -624,7 +669,6 @@
                     new Date(lastLog.log_time).getTime();
 
                 lastCurrentLogTime = ts;
-                lastVoltageLogTime = ts;
             }
         } catch (err) {
 
@@ -659,29 +703,11 @@
                 "A"
             );
 
-            // VOLTAGE
-            updateBar(
-                "voltageBar",
-                "voltageText",
-                data.voltage,
-                voltageMax,
-                "V"
-            );
-
             // PUSH CHART
-            pushData(
-                chartCurrent,
-                data.current,
-                data.created_at,
-                "current"
-            );
-
-            pushData(
-                chartVoltage,
-                data.voltage,
-                data.created_at,
-                "voltage"
-            );
+               pushData(
+        data.current,
+        data.created_at
+    );
 
             // HEARTBEAT
             updateHeartbeat(data.lastHeartbeat);
@@ -704,7 +730,7 @@
         const hb = new Date(lastHeartbeat);
         const now = new Date();
         const diff = (now - hb) / 1000;
-        const espBox = document.getElementById("espStatus");
+        const statusBox =  document.getElementById("statusBox");
         const statusDot = document.getElementById("statusDot");
         const heartbeatText = document.getElementById("heartbeatText");
 
@@ -714,13 +740,13 @@
 
             if (diff <= 120) {
 
-        espBox.innerText = "ONLINE";
-        espBox.className = "status-box mt-2 bg-success text-white";
+        statusBox.innerText = "ONLINE";
+        statusBox.className = "status-box mt-2 bg-success text-white";
         statusDot.className = "status-dot status-online";
     } else {
 
-        espBox.innerText = "OFFLINE";
-        espBox.className = "status-box mt-2 bg-danger text-white";
+        statusBox.innerText = "OFFLINE";
+        statusBox.className = "status-box mt-2 bg-danger text-white";
         statusDot.className = "status-dot status-offline";
     }
     }
@@ -797,7 +823,6 @@
     // resize chart
     window.addEventListener('resize', () => {
         chartCurrent.resize();
-        chartVoltage.resize();
     });
 
 </script>

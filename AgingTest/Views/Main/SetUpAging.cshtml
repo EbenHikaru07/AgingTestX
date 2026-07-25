@@ -81,7 +81,7 @@
                         @if (!Model.LampuList.Any())
                         {
                             <div class="alert alert-warning">
-                                Semua lampu sedang digunakan.
+                                Data lampu tidak ada atau semua lampu sedang digunakan.
                             </div>
                         }
                     <select asp-for="LampuId"
@@ -517,7 +517,7 @@
         </h6>
 
         <div class="alert alert-warning mb-0">
-            Parameter belum tersedia, silahkan isi parameter uji di form samping.
+            Parameter belum tersedia, silahkan isi parameter uji di form parameter uji.
         </div>
     `;
         document.getElementById("parameterForm").style.display = "block";
@@ -710,7 +710,7 @@
         if (!data.id_lamp)
             return alert("Lampu belum dipilih!");
 
-        if (!data.nominal_current || !data.nominal_voltage)
+        if (!data.nominal_current)
             return alert("Nominal harus diisi!");
 
         fetch("/Main/SaveParameterUji", {

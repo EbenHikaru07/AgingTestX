@@ -34,9 +34,6 @@ namespace AgingTest.Models
 
         public string? remarks { get; set; }
 
-        public string? field1 { get; set; }
-
-        public int? field2 { get; set; }
         //public virtual ICollection<AgingProcessModel>? AgingProcesses { get; set; }
         //public virtual ICollection<NotificationModel>? Notifications { get; set; }
     }

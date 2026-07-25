@@ -839,7 +839,7 @@ namespace AgingTest.Controllers
 
             var diff = (DateTime.Now - heartbeat.Value).TotalSeconds;
 
-            if (diff <= 7200)
+            if (diff <= 300)
                 return "ONLINE";
 
             return "OFFLINE";
@@ -1073,7 +1073,7 @@ namespace AgingTest.Controllers
     join c in _context.TestConfiguration
         on p.id_config equals c.id_config
     where c.id_lamp == model.LampuId
-    select (int?)p.field2
+    select (int?)p.test_number
 )
 .MaxAsync();
 
@@ -1089,7 +1089,7 @@ namespace AgingTest.Controllers
                     process_status = status,
                     created_at = now,
 
-                    field2 = currentTestNumber
+                    test_number = currentTestNumber
                 };
 
                 _context.AgingProcess.Add(process);
@@ -1371,11 +1371,11 @@ namespace AgingTest.Controllers
     join device in _context.AgingDevices
         on process.id_device equals device.id_device
     where config.id_lamp == lampId.Value
-    orderby process.field2 descending
+    orderby process.test_number descending
     select new ProcessItemVM
     {
         IdProcess = process.id_process,
-        TestNumber = process.field2 ?? 0,
+        TestNumber = process.test_number ?? 0,
         DeviceName = device.device_name,
         StartTime = process.start_time,
         EndTime = process.end_time,

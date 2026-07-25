@@ -134,12 +134,12 @@
                                                 onclick='editDevice(@item.id_device,"@Html.Raw(JavaScriptEncoder.Default.Encode(item.device_name ?? ""))","@Html.Raw(JavaScriptEncoder.Default.Encode(item.device_code ?? ""))","@item.id_module","@item.max_current","@item.max_voltage","@item.device_status.ToString().ToLower()","@item.is_downtime.ToString().ToLower()","@Html.Raw(JavaScriptEncoder.Default.Encode(item.remarks ?? ""))")'>
                                             <i class="fa-solid fa-pen"></i>
                                         </button>
-                                        <a asp-action="DeleteDeviceAging"
+                                        @* <a asp-action="DeleteDeviceAging"
                                            asp-route-id="@item.id_device"
                                            class="btn btn-sm btn-danger rounded-3"
                                            onclick="return confirm('Delete this device?')">
                                             <i class="fa-solid fa-trash"></i>
-                                        </a>
+                                        </a> *@
                                     </div>
                                 </td>
                             </tr>
@@ -308,7 +308,7 @@
 
                     <div class="col-md-6">
                         <div class="card p-3">
-                            <small>Current</small>
+                            <small>Max Current</small>
                             <div id="d_current" class="fw-bold"></div>
                         </div>
                     </div>

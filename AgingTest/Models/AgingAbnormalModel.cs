@@ -18,9 +18,6 @@ namespace AgingTest.Models
 
         public DateTime abnormal_time { get; set; } = DateTime.Now;
 
-        public string? field1 { get; set; }
-
-        public int? field2 { get; set; }
         // 🔥 Navigation
         [ForeignKey("id_log")]
         public virtual AgingLogModel? Log { get; set; }

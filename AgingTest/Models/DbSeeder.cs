@@ -28,7 +28,7 @@ namespace AgingTest.Models
 
                 var user = new UserModel
                 {
-                    user_badge = "IB0058",
+                    user_badge = "IB0001",
                     username = "Eben",
                     user_role = "engineer",
                     user_status = true,
